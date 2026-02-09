@@ -13,21 +13,6 @@ export interface Source {
   page: number;
 }
 
-export interface UploadedFile {
-  id: string;
-  originalName: string;
-  sanitizedName: string;
-  openaiFileId: string;
-  pageCount: number;
-  uploadedAt: string;
-}
-
-export interface UploadResponse {
-  success: boolean;
-  files: UploadedFile[];
-  error?: string;
-}
-
 export interface ChatRequest {
   message: string;
   locale: Locale;
@@ -55,23 +40,7 @@ export interface Dictionary {
     sources: string;
     errorGeneric: string;
     errorRateLimit: string;
-    errorNoFiles: string;
     welcomeMessage: string;
-  };
-  upload: {
-    title: string;
-    dragDrop: string;
-    browse: string;
-    uploading: string;
-    processing: string;
-    success: string;
-    errorType: string;
-    errorSize: string;
-    errorGeneric: string;
-    maxSize: string;
-    uploadedFiles: string;
-    noFiles: string;
-    pages: string;
   };
   language: {
     toggle: string;

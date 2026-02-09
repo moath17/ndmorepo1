@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { getOpenAIClient } from "@/lib/openai";
 import { ensureVectorStore } from "@/lib/vector-store";
 import { checkRateLimit } from "@/lib/rate-limiter";
-import { getUploadedFileCount } from "@/lib/uploaded-files";
 import { SYSTEM_PROMPT } from "@/lib/system-prompt";
 import type { ChatRequest, Source } from "@/types";
 
@@ -72,16 +71,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if any files have been uploaded
-    const fileCount = await getUploadedFileCount();
-    if (fileCount === 0) {
-      return NextResponse.json(
-        { answer: "", sources: [], error: "no_files" },
-        { status: 400 }
-      );
-    }
-
-    // Get vector store
+    // Get vector store (pre-configured with documents)
     const vectorStoreId = await ensureVectorStore();
     const client = getOpenAIClient();
 
@@ -119,7 +109,6 @@ export async function POST(request: NextRequest) {
 
       // Parse search results for page numbers from [DOCUMENT: ... | PAGE: N] markers
       if (output.type === "file_search_call") {
-        // Access search results - the shape depends on the include parameter
         const outputAny = output as unknown as Record<string, unknown>;
         const results = outputAny.results as
           | Array<{ text?: string; filename?: string }>
@@ -144,7 +133,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Also try to extract sources from the answer text itself
-    // (the model might include [DOCUMENT: ... | PAGE: N] references)
     const answerSources = extractSourcesFromText(answerText);
     for (const as2 of answerSources) {
       const exists = allSources.some(

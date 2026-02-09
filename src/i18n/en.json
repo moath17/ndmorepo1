@@ -1,36 +1,20 @@
 {
   "meta": {
-    "title": "NDMO Document Assistant - AI-Powered PDF Chat",
-    "description": "Upload your PDF documents and chat with an AI assistant that answers questions based only on your documents. No hallucinations, always grounded in your data.",
-    "keywords": "PDF chat, document assistant, AI, RAG, OpenAI, document search, NDMO"
+    "title": "NDMO Document Assistant - AI-Powered Policy Chat",
+    "description": "Ask questions about NDMO policies and get accurate answers grounded in official documents. No hallucinations, always backed by source pages.",
+    "keywords": "NDMO, document assistant, AI, policy chat, RAG, document search"
   },
   "chat": {
-    "heading": "Document Assistant",
-    "subheading": "Upload PDFs and ask questions — answers are grounded only in your documents.",
-    "placeholder": "Ask a question about your documents...",
+    "heading": "NDMO Document Assistant",
+    "subheading": "Ask questions about policies — answers are grounded only in official documents.",
+    "placeholder": "Ask a question about NDMO policies...",
     "send": "Send",
     "thinking": "Searching documents and generating answer...",
     "notFound": "Not found in the provided documents.",
     "sources": "Sources",
     "errorGeneric": "Something went wrong. Please try again.",
     "errorRateLimit": "Too many requests. Please wait a moment and try again.",
-    "errorNoFiles": "Please upload at least one PDF document before asking questions.",
-    "welcomeMessage": "Welcome! Upload one or more PDF documents using the panel on the left, then ask me any question. I will answer based only on the content of your documents."
-  },
-  "upload": {
-    "title": "Documents",
-    "dragDrop": "Drag & drop PDFs here, or",
-    "browse": "browse files",
-    "uploading": "Uploading...",
-    "processing": "Processing document...",
-    "success": "Document uploaded successfully!",
-    "errorType": "Only PDF files are accepted.",
-    "errorSize": "File is too large. Maximum size is 100MB.",
-    "errorGeneric": "Failed to upload file. Please try again.",
-    "maxSize": "Max 100MB per file",
-    "uploadedFiles": "Uploaded Documents",
-    "noFiles": "No documents uploaded yet.",
-    "pages": "pages"
+    "welcomeMessage": "Welcome! Ask me any question about NDMO policies and I will answer based only on the official documents with page citations."
   },
   "language": {
     "toggle": "Language",
