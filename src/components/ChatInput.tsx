@@ -47,8 +47,8 @@ export default function ChatInput({ dict, onSend, disabled }: ChatInputProps) {
   }, []);
 
   return (
-    <div className="border-t border-gray-200 bg-white p-4">
-      <div className="flex items-end gap-3 max-w-4xl mx-auto">
+    <div className="border-t border-gray-200 bg-white p-2.5 sm:p-4">
+      <div className="flex items-end gap-2 sm:gap-3 max-w-4xl mx-auto">
         <div className="flex-1 relative">
           <textarea
             ref={textareaRef}
@@ -60,7 +60,7 @@ export default function ChatInput({ dict, onSend, disabled }: ChatInputProps) {
             disabled={disabled}
             rows={1}
             className="w-full resize-none rounded-xl border border-gray-300 bg-gray-50
-                       px-4 py-3 text-sm text-gray-900 placeholder-gray-400
+                       px-3 sm:px-4 py-2.5 sm:py-3 text-sm text-gray-900 placeholder-gray-400
                        focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent
                        disabled:opacity-50 disabled:cursor-not-allowed
                        transition-colors"
@@ -70,7 +70,7 @@ export default function ChatInput({ dict, onSend, disabled }: ChatInputProps) {
         <button
           onClick={handleSubmit}
           disabled={disabled || !message.trim()}
-          className="flex-shrink-0 w-11 h-11 flex items-center justify-center
+          className="flex-shrink-0 w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center
                      bg-primary-600 hover:bg-primary-700 disabled:bg-gray-300
                      text-white rounded-xl transition-colors
                      focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1

@@ -36,3 +36,9 @@ next-env.d.ts
 
 # uploaded files tracking
 uploaded-files.json
+
+# PDF source files (large binaries)
+/pdfs/
+
+# data cache
+/data/

@@ -1,0 +1,368 @@
+{
+  "categories": [
+    {
+      "id": "data-governance",
+      "nameAr": "حوكمة البيانات",
+      "nameEn": "Data Governance",
+      "domainId": "DG",
+      "questions": [
+        {
+          "id": "dg-1",
+          "questionAr": "هل أنشأت الجهة استراتيجية معتمدة لإدارة البيانات وحماية البيانات الشخصية؟",
+          "questionEn": "Has the entity established an approved Data Management and Personal Data Protection Strategy?",
+          "specRef": "DG.1.1",
+          "isParent": true
+        },
+        {
+          "id": "dg-1a",
+          "questionAr": "هل تتضمن الاستراتيجية خطة تنفيذ بخارطة طريق لمدة 3 سنوات؟",
+          "questionEn": "Does the strategy include an implementation plan with a 3-year roadmap?",
+          "specRef": "DG.1.3",
+          "parentId": "dg-1",
+          "showWhen": "yes"
+        },
+        {
+          "id": "dg-2",
+          "questionAr": "هل طورت الجهة سياسات وإرشادات خاصة بها لإدارة البيانات بعد تحليل الفجوات؟",
+          "questionEn": "Has the entity developed its own Data Management policies and guidelines after conducting a gap analysis?",
+          "specRef": "DG.2.1, DG.2.2"
+        },
+        {
+          "id": "dg-3",
+          "questionAr": "هل أنشأت الجهة مكتب إدارة بيانات ولجنة إدارة بيانات؟",
+          "questionEn": "Has the entity established a Data Management Office and a Data Management Committee?",
+          "specRef": "DG.4.1, DG.4.2",
+          "isParent": true
+        },
+        {
+          "id": "dg-3a",
+          "questionAr": "هل تم تعيين مسؤول بيانات رئيسي (CDO) ومسؤول حوكمة بيانات ومسؤول حماية بيانات شخصية؟",
+          "questionEn": "Has a Chief Data Officer (CDO), Data Governance Officer, and Personal Data Protection Officer been appointed?",
+          "specRef": "DG.4.3, DG.4.4, DG.4.7",
+          "parentId": "dg-3",
+          "showWhen": "yes"
+        },
+        {
+          "id": "dg-4",
+          "questionAr": "هل يتم إجراء تدريب وتوعية للموظفين حول إدارة البيانات وحمايتها؟",
+          "questionEn": "Is training and awareness conducted for employees on data management and protection?",
+          "specRef": "DG.3.1"
+        },
+        {
+          "id": "dg-5",
+          "questionAr": "هل أنشأت الجهة إطار تدقيق امتثال لإدارة البيانات مع نتائج موثقة؟",
+          "questionEn": "Has the entity established a compliance audit framework for data management with documented results?",
+          "specRef": "DG.5.1, DG.5.2"
+        },
+        {
+          "id": "dg-6",
+          "questionAr": "هل توجد مؤشرات أداء رئيسية (KPIs) لقياس أداء حوكمة البيانات وآلية تحسين مستمر؟",
+          "questionEn": "Are there KPIs to measure data governance performance with a continuous improvement mechanism?",
+          "specRef": "DG.7.1, DG.7.2"
+        }
+      ]
+    },
+    {
+      "id": "data-catalog",
+      "nameAr": "فهرس البيانات والبيانات الوصفية",
+      "nameEn": "Data Catalog and Metadata",
+      "domainId": "MCM",
+      "questions": [
+        {
+          "id": "mcm-1",
+          "questionAr": "هل أنشأت الجهة خطة لفهرس البيانات تتضمن هيكل البيانات الوصفية المستهدف؟",
+          "questionEn": "Has the entity created a Data Catalog plan including the target metadata architecture?",
+          "specRef": "MCM.1.1, MCM.1.3"
+        },
+        {
+          "id": "mcm-2",
+          "questionAr": "هل تم تطبيق أداة فهرس بيانات آلية كمستودع مركزي للبيانات الوصفية؟",
+          "questionEn": "Has an automated Data Catalog tool been implemented as a central metadata repository?",
+          "specRef": "MCM.5.1",
+          "isParent": true
+        },
+        {
+          "id": "mcm-2a",
+          "questionAr": "هل يتم تسجيل وتحديث البيانات الوصفية بشكل منتظم في فهرس البيانات؟",
+          "questionEn": "Is metadata regularly registered and updated in the Data Catalog?",
+          "specRef": "MCM.4.2, MCM.4.4",
+          "parentId": "mcm-2",
+          "showWhen": "yes"
+        }
+      ]
+    },
+    {
+      "id": "data-quality",
+      "nameAr": "جودة البيانات",
+      "nameEn": "Data Quality",
+      "domainId": "DQ",
+      "questions": [
+        {
+          "id": "dq-1",
+          "questionAr": "هل أنشأت الجهة خطة لجودة البيانات وأجرت تقييماً أولياً لجودة بياناتها؟",
+          "questionEn": "Has the entity created a Data Quality plan and performed an initial Data Quality assessment?",
+          "specRef": "DQ.1.2, DQ.1.3"
+        },
+        {
+          "id": "dq-2",
+          "questionAr": "هل تم تطوير قواعد جودة البيانات ومراقبتها بشكل دوري مع آلية لحل المشكلات؟",
+          "questionEn": "Have Data Quality rules been developed and monitored periodically with an issue resolution process?",
+          "specRef": "DQ.2.1, DQ.2.2, DQ.2.3"
+        }
+      ]
+    },
+    {
+      "id": "data-operations",
+      "nameAr": "عمليات البيانات",
+      "nameEn": "Data Operations",
+      "domainId": "DO",
+      "questions": [
+        {
+          "id": "do-1",
+          "questionAr": "هل أنشأت الجهة خطة لعمليات البيانات وسياسة للتخزين والاحتفاظ والتخلص؟",
+          "questionEn": "Has the entity created a Data Operations plan with a storage, retention, and disposal policy?",
+          "specRef": "DO.1.1, DO.2.1"
+        },
+        {
+          "id": "do-2",
+          "questionAr": "هل توجد خطة للنسخ الاحتياطي والتعافي من الكوارث لأنظمة البيانات؟",
+          "questionEn": "Is there a backup and disaster recovery plan for data systems?",
+          "specRef": "DO.4.1, DO.4.2"
+        }
+      ]
+    },
+    {
+      "id": "document-content",
+      "nameAr": "إدارة الوثائق والمحتوى",
+      "nameEn": "Document and Content Management",
+      "domainId": "DCM",
+      "questions": [
+        {
+          "id": "dcm-1",
+          "questionAr": "هل أنشأت الجهة خطة لإدارة الوثائق والمحتوى تتضمن خطة رقمنة؟",
+          "questionEn": "Has the entity created a Document and Content Management plan including a digitization plan?",
+          "specRef": "DCM.1.1, DCM.1.2"
+        },
+        {
+          "id": "dcm-2",
+          "questionAr": "هل تم تطبيق أنظمة إدارة وثائق إلكترونية (DMS) مع سياسة واضحة للوصول والتخلص؟",
+          "questionEn": "Has a Document Management System (DMS) been implemented with clear access and disposal policies?",
+          "specRef": "DCM.4.5, DCM.2.1"
+        }
+      ]
+    },
+    {
+      "id": "data-architecture",
+      "nameAr": "هيكلة البيانات والنمذجة",
+      "nameEn": "Data Architecture and Modeling",
+      "domainId": "DAM",
+      "questions": [
+        {
+          "id": "dam-1",
+          "questionAr": "هل أنشأت الجهة خطة لهيكلة البيانات تتضمن نماذج بيانات موثقة؟",
+          "questionEn": "Has the entity created a Data Architecture plan with documented data models?",
+          "specRef": "DAM.1.1"
+        },
+        {
+          "id": "dam-2",
+          "questionAr": "هل تم تحديد وتوثيق تدفقات البيانات بين الأنظمة الداخلية والخارجية؟",
+          "questionEn": "Have data flows been identified and documented between internal and external systems?",
+          "specRef": "DAM.3.1, DAM.4.1"
+        }
+      ]
+    },
+    {
+      "id": "reference-master-data",
+      "nameAr": "إدارة البيانات المرجعية والرئيسية",
+      "nameEn": "Reference and Master Data Management",
+      "domainId": "RMD",
+      "questions": [
+        {
+          "id": "rmd-1",
+          "questionAr": "هل تم تحديد وتوثيق البيانات المرجعية والرئيسية للجهة؟",
+          "questionEn": "Have the entity's reference and master data been identified and documented?",
+          "specRef": "RMD.1.1"
+        },
+        {
+          "id": "rmd-2",
+          "questionAr": "هل توجد حوكمة واضحة للبيانات الرئيسية تتضمن تعيين ملاك البيانات وإدارة جودتها؟",
+          "questionEn": "Is there clear governance for master data including data owners and quality management?",
+          "specRef": "RMD.3.1, RMD.4.1"
+        }
+      ]
+    },
+    {
+      "id": "bi-analytics",
+      "nameAr": "ذكاء الأعمال والتحليلات",
+      "nameEn": "Business Intelligence and Analytics",
+      "domainId": "BIA",
+      "questions": [
+        {
+          "id": "bia-1",
+          "questionAr": "هل أنشأت الجهة خطة لذكاء الأعمال والتحليلات مع أدوات تحليل بيانات مناسبة؟",
+          "questionEn": "Has the entity created a BI and Analytics plan with appropriate data analysis tools?",
+          "specRef": "BIA.1.1, BIA.3.1"
+        },
+        {
+          "id": "bia-2",
+          "questionAr": "هل يتم استخدام البيانات في اتخاذ القرارات الاستراتيجية والتشغيلية؟",
+          "questionEn": "Is data used in making strategic and operational decisions?",
+          "specRef": "BIA.4.1"
+        }
+      ]
+    },
+    {
+      "id": "data-sharing",
+      "nameAr": "مشاركة البيانات والتشغيل البيني",
+      "nameEn": "Data Sharing and Interoperability",
+      "domainId": "DSI",
+      "questions": [
+        {
+          "id": "dsi-1",
+          "questionAr": "هل أنشأت الجهة سياسة معتمدة لمشاركة البيانات مع الجهات الأخرى؟",
+          "questionEn": "Has the entity established an approved policy for sharing data with other entities?",
+          "specRef": "DSI.2.1"
+        },
+        {
+          "id": "dsi-2",
+          "questionAr": "هل يتم توقيع اتفاقيات مشاركة بيانات قبل أي عملية مشاركة؟",
+          "questionEn": "Are data sharing agreements signed before any data sharing operation?",
+          "specRef": "DSI.3.1",
+          "isParent": true
+        },
+        {
+          "id": "dsi-2a",
+          "questionAr": "هل يتم تدقيق ومراقبة عمليات مشاركة البيانات بشكل دوري؟",
+          "questionEn": "Are data sharing operations audited and monitored periodically?",
+          "specRef": "DSI.5.1",
+          "parentId": "dsi-2",
+          "showWhen": "yes"
+        }
+      ]
+    },
+    {
+      "id": "data-value",
+      "nameAr": "تحقيق القيمة من البيانات",
+      "nameEn": "Data Value Realization",
+      "domainId": "DVR",
+      "questions": [
+        {
+          "id": "dvr-1",
+          "questionAr": "هل تم تحديد حالات استخدام بيانات تولد إيرادات أو تقلل تكاليف التشغيل؟",
+          "questionEn": "Have data-driven use cases been identified that generate revenue or reduce operating costs?",
+          "specRef": "DVR.1.1"
+        },
+        {
+          "id": "dvr-2",
+          "questionAr": "هل يتم تقييم أصول البيانات بشكل دوري لتحديد فرص جديدة لتحقيق القيمة؟",
+          "questionEn": "Are data assets periodically evaluated to identify new value realization opportunities?",
+          "specRef": "DVR.3.1"
+        }
+      ]
+    },
+    {
+      "id": "open-data",
+      "nameAr": "البيانات المفتوحة",
+      "nameEn": "Open Data",
+      "domainId": "OD",
+      "questions": [
+        {
+          "id": "od-1",
+          "questionAr": "هل أنشأت الجهة خطة للبيانات المفتوحة مع تحديد مجموعات البيانات المؤهلة للنشر؟",
+          "questionEn": "Has the entity created an Open Data plan identifying datasets eligible for publication?",
+          "specRef": "OD.1.1, OD.1.2"
+        },
+        {
+          "id": "od-2",
+          "questionAr": "هل يتم نشر البيانات المفتوحة على منصة مخصصة وتحديثها بشكل دوري؟",
+          "questionEn": "Is open data published on a dedicated platform and updated periodically?",
+          "specRef": "OD.3.1, OD.4.1"
+        }
+      ]
+    },
+    {
+      "id": "freedom-info",
+      "nameAr": "حرية المعلومات",
+      "nameEn": "Freedom of Information",
+      "domainId": "FoI",
+      "questions": [
+        {
+          "id": "foi-1",
+          "questionAr": "هل أنشأت الجهة سياسة وإجراءات لحرية المعلومات تتيح للمواطنين الوصول لبيانات الجهة؟",
+          "questionEn": "Has the entity established a Freedom of Information policy allowing citizens to access entity data?",
+          "specRef": "FoI.1.1, FoI.2.1"
+        },
+        {
+          "id": "foi-2",
+          "questionAr": "هل توجد آلية واضحة لتقديم طلبات الوصول للمعلومات والاستئناف في حال الرفض؟",
+          "questionEn": "Is there a clear mechanism for submitting information access requests and appealing rejections?",
+          "specRef": "FoI.3.1, FoI.3.2"
+        }
+      ]
+    },
+    {
+      "id": "data-classification",
+      "nameAr": "تصنيف البيانات",
+      "nameEn": "Data Classification",
+      "domainId": "DC",
+      "questions": [
+        {
+          "id": "dc-1",
+          "questionAr": "هل تم تصنيف جميع بيانات الجهة وفقاً لمستويات التصنيف الأربعة المعتمدة من NDMO؟",
+          "questionEn": "Has all entity data been classified according to the four classification levels defined by NDMO?",
+          "specRef": "DC.1.1, DC.2.1",
+          "isParent": true
+        },
+        {
+          "id": "dc-1a",
+          "questionAr": "هل يتم مراجعة تصنيفات البيانات بشكل دوري وتحديثها عند التغيير؟",
+          "questionEn": "Are data classifications reviewed periodically and updated when changes occur?",
+          "specRef": "DC.3.1",
+          "parentId": "dc-1",
+          "showWhen": "yes"
+        },
+        {
+          "id": "dc-2",
+          "questionAr": "هل توجد ضوابط وصول محددة بناءً على مستوى تصنيف البيانات؟",
+          "questionEn": "Are there access controls defined based on the data classification level?",
+          "specRef": "DC.4.1"
+        }
+      ]
+    },
+    {
+      "id": "personal-data",
+      "nameAr": "حماية البيانات الشخصية",
+      "nameEn": "Personal Data Protection",
+      "domainId": "PDP",
+      "questions": [
+        {
+          "id": "pdp-1",
+          "questionAr": "هل أنشأت الجهة سياسة معتمدة لحماية البيانات الشخصية؟",
+          "questionEn": "Has the entity established an approved Personal Data Protection policy?",
+          "specRef": "PDP.1.1",
+          "isParent": true
+        },
+        {
+          "id": "pdp-1a",
+          "questionAr": "هل تم تعيين مسؤول حماية البيانات الشخصية (PDPO)؟",
+          "questionEn": "Has a Personal Data Protection Officer (PDPO) been appointed?",
+          "specRef": "DG.4.7",
+          "parentId": "pdp-1",
+          "showWhen": "yes"
+        },
+        {
+          "id": "pdp-2",
+          "questionAr": "هل يتم الحصول على موافقة صاحب البيانات قبل جمع بياناته الشخصية ومعالجتها؟",
+          "questionEn": "Is consent obtained from data subjects before collecting and processing their personal data?",
+          "specRef": "PDP.2.1"
+        },
+        {
+          "id": "pdp-3",
+          "questionAr": "هل توجد إجراءات للتعامل مع طلبات أصحاب البيانات وآلية للإبلاغ عن خروقات البيانات؟",
+          "questionEn": "Are there procedures for handling data subject requests and a mechanism for reporting data breaches?",
+          "specRef": "PDP.3.1, PDP.4.1"
+        }
+      ]
+    }
+  ]
+}

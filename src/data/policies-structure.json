@@ -1,0 +1,321 @@
+{
+  "domains": [
+    {
+      "id": "data-governance",
+      "nameAr": "حوكمة البيانات",
+      "nameEn": "Data Governance",
+      "controlCount": 8,
+      "specCount": 28,
+      "dimensions": [
+        {
+          "id": "dg-strategy",
+          "nameAr": "الاستراتيجية",
+          "nameEn": "Strategy",
+          "controls": [
+            {
+              "id": "dg-s-1",
+              "nameAr": "الاستراتيجية والخطة",
+              "nameEn": "Strategy and Plan",
+              "specs": [
+                "استراتيجية إدارة البيانات وحوكمتها وحماية البيانات الشخصية",
+                "السياسات والقواعد الاستشارية",
+                "خطة إدارة البيانات وحوكمتها وحماية البيانات الشخصية",
+                "اعتماد الاستراتيجية ونشرها"
+              ]
+            },
+            {
+              "id": "dg-s-2",
+              "nameAr": "السياسات والقواعد الاستشارية",
+              "nameEn": "Policies and Advisory Rules",
+              "specs": [
+                "سياسات إدارة البيانات وحوكمتها وحماية البيانات الشخصية وقواعدها الاستشارية"
+              ]
+            },
+            {
+              "id": "dg-s-3",
+              "nameAr": "التدريب والتوعية",
+              "nameEn": "Training and Awareness",
+              "specs": [
+                "التدريب على إدارة البيانات وحوكمتها",
+                "تحليل التهديدات لسياسات إدارة البيانات وحماية البيانات الشخصية وقواعدها الاستشارية"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "dg-implementation",
+          "nameAr": "التنفيذ",
+          "nameEn": "Implementation",
+          "controls": [
+            {
+              "id": "dg-i-1",
+              "nameAr": "تنظيم إدارة البيانات وحوكمتها وحماية البيانات الشخصية",
+              "nameEn": "Data Management Organization and Personal Data Protection",
+              "specs": [
+                "مكتب إدارة البيانات",
+                "لجنة إدارة البيانات وحوكمتها لدى الجهة",
+                "مدير مكتب البيانات",
+                "مسؤول إدارة البيانات",
+                "مسؤول إتاحة البيانات",
+                "مسؤول الامتثال",
+                "مسؤول حماية البيانات الشخصية",
+                "ممثلي بيانات أعمال",
+                "مختصي بيانات أعمال",
+                "نقيس وفنيس بيانات",
+                "المستشار القانوني"
+              ]
+            },
+            {
+              "id": "dg-i-2",
+              "nameAr": "إطار تدقيق الامتثال",
+              "nameEn": "Compliance Audit Framework",
+              "specs": [
+                "إدارة الامتثال",
+                "نتائج تدقيق الامتثال",
+                "مراقبة الامتثال"
+              ]
+            },
+            {
+              "id": "dg-i-3",
+              "nameAr": "حوكمة دورة حياة البيانات",
+              "nameEn": "Data Lifecycle Governance",
+              "specs": [
+                "مراجعة دورية للخطة",
+                "التواصل",
+                "التحسين المستمر"
+              ]
+            },
+            {
+              "id": "dg-i-4",
+              "nameAr": "إدارة الأداء",
+              "nameEn": "Performance Management",
+              "specs": [
+                "مؤشرات الأداء الرئيسية لحوكمة البيانات"
+              ]
+            },
+            {
+              "id": "dg-i-5",
+              "nameAr": "السجلات",
+              "nameEn": "Records",
+              "specs": [
+                "سجل توثيق موافقات حوكمة البيانات",
+                "سجل توثيق سير المتابعة لمشاكل إدارة البيانات",
+                "ضبط الإجراءات"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "data-classification",
+      "nameAr": "تصنيف البيانات",
+      "nameEn": "Data Classification",
+      "controlCount": 5,
+      "specCount": 15,
+      "dimensions": [
+        {
+          "id": "dc-strategy",
+          "nameAr": "الاستراتيجية",
+          "nameEn": "Strategy",
+          "controls": [
+            {
+              "id": "dc-s-1",
+              "nameAr": "سياسة تصنيف البيانات",
+              "nameEn": "Data Classification Policy",
+              "specs": [
+                "تحديد مستويات التصنيف",
+                "معايير التصنيف",
+                "إجراءات التصنيف"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "dc-implementation",
+          "nameAr": "التنفيذ",
+          "nameEn": "Implementation",
+          "controls": [
+            {
+              "id": "dc-i-1",
+              "nameAr": "تنفيذ التصنيف",
+              "nameEn": "Classification Implementation",
+              "specs": [
+                "تطبيق مستويات التصنيف",
+                "مراجعة التصنيفات",
+                "تحديث التصنيفات"
+              ]
+            },
+            {
+              "id": "dc-i-2",
+              "nameAr": "حماية البيانات المصنفة",
+              "nameEn": "Classified Data Protection",
+              "specs": [
+                "ضوابط الوصول حسب التصنيف",
+                "إجراءات المعالجة حسب التصنيف"
+              ]
+            },
+            {
+              "id": "dc-i-3",
+              "nameAr": "التدقيق والامتثال",
+              "nameEn": "Audit and Compliance",
+              "specs": [
+                "مراجعة الامتثال لسياسة التصنيف"
+              ]
+            },
+            {
+              "id": "dc-i-4",
+              "nameAr": "التوعية بالتصنيف",
+              "nameEn": "Classification Awareness",
+              "specs": [
+                "تدريب الموظفين على التصنيف",
+                "نشر ثقافة تصنيف البيانات"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "data-sharing",
+      "nameAr": "مشاركة البيانات",
+      "nameEn": "Data Sharing",
+      "controlCount": 4,
+      "specCount": 12,
+      "dimensions": [
+        {
+          "id": "ds-strategy",
+          "nameAr": "الاستراتيجية",
+          "nameEn": "Strategy",
+          "controls": [
+            {
+              "id": "ds-s-1",
+              "nameAr": "سياسة مشاركة البيانات",
+              "nameEn": "Data Sharing Policy",
+              "specs": [
+                "إطار مشاركة البيانات",
+                "اتفاقيات المشاركة",
+                "شروط المشاركة"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ds-implementation",
+          "nameAr": "التنفيذ",
+          "nameEn": "Implementation",
+          "controls": [
+            {
+              "id": "ds-i-1",
+              "nameAr": "آليات المشاركة",
+              "nameEn": "Sharing Mechanisms",
+              "specs": [
+                "منصات مشاركة البيانات",
+                "واجهات برمجة التطبيقات",
+                "قنوات المشاركة الآمنة"
+              ]
+            },
+            {
+              "id": "ds-i-2",
+              "nameAr": "إدارة الطلبات",
+              "nameEn": "Request Management",
+              "specs": [
+                "عملية طلب البيانات",
+                "الموافقة والمراجعة",
+                "تتبع الطلبات"
+              ]
+            },
+            {
+              "id": "ds-i-3",
+              "nameAr": "مراقبة المشاركة",
+              "nameEn": "Sharing Monitoring",
+              "specs": [
+                "تدقيق عمليات المشاركة",
+                "تقارير المشاركة",
+                "مراجعة الاتفاقيات"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "open-data",
+      "nameAr": "البيانات المفتوحة",
+      "nameEn": "Open Data",
+      "controlCount": 4,
+      "specCount": 10,
+      "dimensions": [
+        {
+          "id": "od-strategy",
+          "nameAr": "الاستراتيجية",
+          "nameEn": "Strategy",
+          "controls": [
+            {
+              "id": "od-s-1",
+              "nameAr": "سياسة البيانات المفتوحة",
+              "nameEn": "Open Data Policy",
+              "specs": [
+                "إطار البيانات المفتوحة",
+                "معايير النشر"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "od-implementation",
+          "nameAr": "التنفيذ",
+          "nameEn": "Implementation",
+          "controls": [
+            {
+              "id": "od-i-1",
+              "nameAr": "نشر البيانات المفتوحة",
+              "nameEn": "Open Data Publishing",
+              "specs": [
+                "منصة البيانات المفتوحة",
+                "صيغ البيانات المعتمدة",
+                "التحديث الدوري"
+              ]
+            },
+            {
+              "id": "od-i-2",
+              "nameAr": "جودة البيانات المفتوحة",
+              "nameEn": "Open Data Quality",
+              "specs": [
+                "معايير الجودة",
+                "مراجعة البيانات المنشورة"
+              ]
+            },
+            {
+              "id": "od-i-3",
+              "nameAr": "تراخيص البيانات المفتوحة",
+              "nameEn": "Open Data Licensing",
+              "specs": [
+                "أنواع التراخيص",
+                "شروط الاستخدام",
+                "حقوق الملكية"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "totalDomains": 4,
+    "totalControls": 21,
+    "totalSpecs": 65,
+    "documents": [
+      { "name": "ضوابط ومواصفات إدارة البيانات الوطنية وحوكمتها وحماية البيانات الشخصية", "file": "Policies001.pdf", "pages": 197, "language": "ar" },
+      { "name": "سياسات حوكمة البيانات الوطنية - الإصدار الثاني", "file": "PoliciesAr.pdf", "pages": 125, "language": "ar" },
+      { "name": "Data Management and Personal Data Protection Standards", "file": "PoliciesEn001.pdf", "pages": 173, "language": "en" },
+      { "name": "National Data Governance Interim Regulations", "file": "PoliciesEn-b.pdf", "pages": 57, "language": "en" },
+      { "name": "Data Governance Policy", "file": "Data-Governance-Policy.pdf", "pages": 67, "language": "en" },
+      { "name": "Data Classification Policy", "file": "Data Classification Policy.pdf", "pages": 28, "language": "en" },
+      { "name": "Data Sharing Policy", "file": "Data Sharing Policy.pdf", "pages": 15, "language": "en" },
+      { "name": "Open Data Policy", "file": "Open Data Policy.pdf", "pages": 17, "language": "en" },
+      { "name": "ضوابط الأمن السيبراني للبيانات", "file": "DCC-.pdf", "pages": 27, "language": "ar" },
+      { "name": "الترتيبات التنظيمية للهيئة السعودية للبيانات والذكاء الاصطناعي", "file": "download.pdf", "pages": 8, "language": "ar" }
+    ]
+  }
+}
