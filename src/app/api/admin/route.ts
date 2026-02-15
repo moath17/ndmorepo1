@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAllInteractions, getAnalytics } from "@/lib/learning";
+import { getAllInteractions, getAllInteractionsAsync, getAnalytics, getAnalyticsAsync } from "@/lib/learning";
+import { isInteractionsStoreAvailable } from "@/lib/interactions-store";
 import { getAllSessions } from "@/lib/session";
+import { getNotesFromStore, isNotesStoreAvailable } from "@/lib/notes-store";
 import { readFileSync, existsSync, statSync, readdirSync } from "fs";
 import { resolve, extname } from "path";
 
@@ -27,7 +29,11 @@ function verifyPassword(request: NextRequest): boolean {
   return token === ADMIN_TOKEN;
 }
 
-function loadNotes() {
+async function loadNotes(): Promise<Array<{ id: string; content: string; timestamp: string; sessionId: string }>> {
+  if (isNotesStoreAvailable()) {
+    const notes = await getNotesFromStore();
+    return notes;
+  }
   const notesFile = resolve(DATA_DIR, "notes.json");
   if (!existsSync(notesFile)) return [];
   try {
@@ -184,11 +190,11 @@ export async function POST(request: NextRequest) {
     }
 
     if (action === "dashboard") {
-      const analytics = getAnalytics();
+      const analytics = isInteractionsStoreAvailable() ? await getAnalyticsAsync() : getAnalytics();
       const sessions = getAllSessions();
       const files = loadProcessedFiles();
-      const notes = loadNotes();
-      const interactions = getAllInteractions();
+      const notes = await loadNotes();
+      const interactions = isInteractionsStoreAvailable() ? await getAllInteractionsAsync() : getAllInteractions();
       const assessments = loadAssessments();
 
       const questions = interactions.map((i) => ({

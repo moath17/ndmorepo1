@@ -2,19 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { resolve } from "path";
 import { filterInput } from "@/lib/content-filter";
+import {
+  getNotesFromStore,
+  appendNoteToStore,
+  isNotesStoreAvailable,
+  type StoredNote,
+} from "@/lib/notes-store";
 
 const DATA_DIR = resolve(process.cwd(), "data");
 const NOTES_FILE = resolve(DATA_DIR, "notes.json");
 
-interface Note {
-  id: string;
-  sessionId: string;
-  content: string;
-  timestamp: string;
-  locale: string;
-}
-
-function loadNotes(): { notes: Note[] } {
+function loadNotesFromFile(): { notes: StoredNote[] } {
   if (!existsSync(NOTES_FILE)) return { notes: [] };
   try {
     return JSON.parse(readFileSync(NOTES_FILE, "utf-8"));
@@ -23,7 +21,7 @@ function loadNotes(): { notes: Note[] } {
   }
 }
 
-function saveNotes(data: { notes: Note[] }) {
+function saveNotesToFile(data: { notes: StoredNote[] }) {
   if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
   writeFileSync(NOTES_FILE, JSON.stringify(data, null, 2), "utf-8");
 }
@@ -40,7 +38,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Content filter
     const filterResult = filterInput(content);
     if (filterResult.blocked) {
       return NextResponse.json(
@@ -49,22 +46,45 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const data = loadNotes();
-    const note: Note = {
+    const note: StoredNote = {
       id: `note-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       sessionId: sessionId || "unknown",
-      content: content.trim().slice(0, 1000), // Limit to 1000 chars
+      content: content.trim().slice(0, 1000),
       timestamp: new Date().toISOString(),
       locale: locale || "en",
     };
-    data.notes.push(note);
 
-    // Keep last 200 notes
+    if (isNotesStoreAvailable()) {
+      const ok = await appendNoteToStore(note);
+      if (!ok) {
+        return NextResponse.json(
+          { error: "Failed to save note" },
+          { status: 500 }
+        );
+      }
+      return NextResponse.json({ success: true });
+    }
+
+    const data = loadNotesFromFile();
+    data.notes.push(note);
     if (data.notes.length > 200) {
       data.notes = data.notes.slice(-200);
     }
-
-    saveNotes(data);
+    try {
+      saveNotesToFile(data);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes("EROFS") || msg.includes("read-only")) {
+        return NextResponse.json(
+          {
+            error:
+              "Notes storage is not configured for this environment. Set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN for production.",
+          },
+          { status: 503 }
+        );
+      }
+      throw err;
+    }
     return NextResponse.json({ success: true });
   } catch (err) {
     const message =

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { recordInteraction, rateInteraction } from "@/lib/learning";
+import { recordInteraction, recordInteractionAsync, rateInteraction, rateInteractionAsync } from "@/lib/learning";
+import { isInteractionsStoreAvailable } from "@/lib/interactions-store";
 import { trackSession } from "@/lib/session";
 
 export async function POST(request: NextRequest) {
@@ -21,7 +22,7 @@ export async function POST(request: NextRequest) {
       if (sessionId) {
         trackSession(sessionId, userName || undefined, locale);
       }
-      const id = recordInteraction({
+      const payload = {
         sessionId: sessionId || "unknown",
         userName: userName || undefined,
         timestamp: new Date().toISOString(),
@@ -32,7 +33,10 @@ export async function POST(request: NextRequest) {
         rating: null,
         feedbackReason: null,
         responseTimeMs: responseTimeMs || 0,
-      });
+      };
+      const id = isInteractionsStoreAvailable()
+        ? await recordInteractionAsync(payload)
+        : recordInteraction(payload);
       return NextResponse.json({ success: true, interactionId: id });
     }
 
@@ -45,7 +49,9 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
-      const success = rateInteraction(interactionId, rating, feedbackReason);
+      const success = isInteractionsStoreAvailable()
+        ? await rateInteractionAsync(interactionId, rating, feedbackReason)
+        : rateInteraction(interactionId, rating, feedbackReason);
       return NextResponse.json({ success });
     }
 

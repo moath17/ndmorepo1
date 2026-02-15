@@ -10,12 +10,14 @@ import { getOpenAIClient, getVectorStoreId } from "./openai";
 const DATA_DIR = resolve(process.cwd(), "data");
 const CONFIG_FILE = resolve(DATA_DIR, "files-config.json");
 
-/** Only these files are shown and used (Arabic + English). Add more later if needed. */
+/** Only these files are shown and used (Arabic + English). */
 const ALLOWED_FILENAMES = new Set([
   "Policies001.pdf",
   "Policies001.txt",
   "PoliciesEn001.pdf",
   "PoliciesEn001.txt",
+  "National Data Management Office Data Management, Governance, and Personal Data Protection Standards.pdf",
+  "مكتب إدارة البيانات الوطنية وضوابط ومواصفات إدارة البيانات الوطنية وحوكمتها وحماية البيانات الشخصية.pdf",
 ]);
 
 function isAllowedFilename(filename: string): boolean {
@@ -170,7 +172,7 @@ export async function uploadFile(
   displayName?: string
 ): Promise<{ success: boolean; error?: string; file?: FileConfig }> {
   if (!isAllowedFilename(originalFilename)) {
-    return { success: false, error: "Only Policies001.pdf and PoliciesEn001.pdf are allowed." };
+    return { success: false, error: "Only the allowed policy PDFs are accepted (e.g. Policies001.pdf, PoliciesEn001.pdf, or the NDMO standards documents)." };
   }
   const vectorStoreId = getVectorStoreId();
   if (!vectorStoreId) return { success: false, error: "No vector store configured" };

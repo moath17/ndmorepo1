@@ -6,6 +6,12 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { resolve } from "path";
 import type { Source } from "@/types";
+import {
+  getInteractionsFromStore,
+  saveInteractionsToStore,
+  isInteractionsStoreAvailable,
+  type StoredInteraction,
+} from "./interactions-store";
 
 // --- Data paths ---
 const DATA_DIR = resolve(process.cwd(), "data");
@@ -121,6 +127,22 @@ export function recordInteraction(interaction: Omit<Interaction, "id">) {
   return newInteraction.id;
 }
 
+/** Async: record interaction using Redis when available (for Vercel). */
+export async function recordInteractionAsync(interaction: Omit<Interaction, "id">): Promise<string> {
+  if (isInteractionsStoreAvailable()) {
+    const list = await getInteractionsFromStore();
+    const newOne: StoredInteraction = {
+      ...interaction,
+      id: `int-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    };
+    list.push(newOne);
+    const trimmed = list.length > 1000 ? list.slice(-1000) : list;
+    const ok = await saveInteractionsToStore(trimmed);
+    if (ok) return newOne.id;
+  }
+  return recordInteraction(interaction);
+}
+
 /** Update the rating of an existing interaction */
 export function rateInteraction(
   interactionId: string,
@@ -143,6 +165,26 @@ export function rateInteraction(
     return true;
   }
   return false;
+}
+
+/** Async: rate interaction using Redis when available (for Vercel). */
+export async function rateInteractionAsync(
+  interactionId: string,
+  rating: "up" | "down",
+  feedbackReason?: string
+): Promise<boolean> {
+  if (isInteractionsStoreAvailable()) {
+    const list = await getInteractionsFromStore();
+    const interaction = list.find((i) => i.id === interactionId);
+    if (interaction) {
+      interaction.rating = rating;
+      interaction.feedbackReason = feedbackReason ?? null;
+      await saveInteractionsToStore(list);
+      return true;
+    }
+    return false;
+  }
+  return rateInteraction(interactionId, rating, feedbackReason);
 }
 
 /** Check if there's a cached high-quality answer for this question */
@@ -182,6 +224,15 @@ export function getAmbiguousPattern(
 /** Get all interactions (for admin panel) */
 export function getAllInteractions(): Interaction[] {
   return loadInteractions().interactions;
+}
+
+/** Async: get all interactions from Redis when available (for Vercel admin). */
+export async function getAllInteractionsAsync(): Promise<Interaction[]> {
+  if (isInteractionsStoreAvailable()) {
+    const list = await getInteractionsFromStore();
+    return list as Interaction[];
+  }
+  return getAllInteractions();
 }
 
 /** Get analytics for admin panel */
@@ -224,6 +275,43 @@ export function getAnalytics() {
     reasonCounts,
     topQuestions,
   };
+}
+
+/** Async: get analytics from Redis when available (for Vercel admin). */
+export async function getAnalyticsAsync(): Promise<ReturnType<typeof getAnalytics>> {
+  if (isInteractionsStoreAvailable()) {
+    const interactions = await getInteractionsFromStore();
+    const total = interactions.length;
+    const rated = interactions.filter((i) => i.rating != null);
+    const upCount = rated.filter((i) => i.rating === "up").length;
+    const downCount = rated.filter((i) => i.rating === "down").length;
+    const reasonCounts: Record<string, number> = {};
+    for (const i of rated) {
+      if (i.rating === "down" && i.feedbackReason) {
+        reasonCounts[i.feedbackReason] = (reasonCounts[i.feedbackReason] || 0) + 1;
+      }
+    }
+    const questionCounts: Record<string, number> = {};
+    for (const i of interactions) {
+      const norm = normalize(i.question);
+      questionCounts[norm] = (questionCounts[norm] || 0) + 1;
+    }
+    const topQuestions = Object.entries(questionCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([q, count]) => ({ question: q, count }));
+    return {
+      total,
+      upCount,
+      downCount,
+      unrated: total - upCount - downCount,
+      satisfactionRate:
+        upCount + downCount > 0 ? Math.round((upCount / (upCount + downCount)) * 100) : 0,
+      reasonCounts,
+      topQuestions,
+    };
+  }
+  return getAnalytics();
 }
 
 // --- Internal learning logic ---

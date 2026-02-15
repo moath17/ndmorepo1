@@ -67,6 +67,9 @@ Edit `.env.local`:
 OPENAI_API_KEY=sk-your-key-here
 OPENAI_VECTOR_STORE_ID=vs_your-store-id-here   # Optional
 NEXT_PUBLIC_BASE_URL=http://localhost:3000
+# For production (Vercel): notes/feedback in admin — add Upstash Redis from Vercel Marketplace, then:
+# UPSTASH_REDIS_REST_URL=https://...
+# UPSTASH_REDIS_REST_TOKEN=...
 ```
 
 ### 5. Run Locally
@@ -231,6 +234,7 @@ List all uploaded files.
    - `OPENAI_API_KEY`
    - `OPENAI_VECTOR_STORE_ID` (recommended for production)
    - `NEXT_PUBLIC_BASE_URL` (your production domain, e.g., `https://yourdomain.com`)
+   - **Notes in admin:** Add **Upstash Redis** from Vercel Marketplace (Storage), then add `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` so client notes are saved and visible in the admin panel.
 
 4. Deploy
 
@@ -281,3 +285,4 @@ The exact system prompt used for strict grounding is in `src/lib/system-prompt.t
 ## License
 
 MIT
+hi majid 
