@@ -93,6 +93,32 @@ function detectTableData(
   return { labels, values, title: headers[numColIdx] };
 }
 
+/**
+ * Split content by [[H]]...[[/H]] markers so we can render highlighted quotes in yellow.
+ */
+function splitByHighlight(
+  content: string
+): Array<{ type: "normal" | "highlight"; text: string }> {
+  const parts: Array<{ type: "normal" | "highlight"; text: string }> = [];
+  const regex = /\[\[H\]\]([\s\S]*?)\[\[\/H\]\]/g;
+  let lastIndex = 0;
+  let match;
+  while ((match = regex.exec(content)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push({
+        type: "normal",
+        text: content.slice(lastIndex, match.index),
+      });
+    }
+    parts.push({ type: "highlight", text: match[1] });
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < content.length) {
+    parts.push({ type: "normal", text: content.slice(lastIndex) });
+  }
+  return parts.length > 0 ? parts : [{ type: "normal", text: content }];
+}
+
 /** Copy table as tab-separated values (Excel-compatible) */
 function CopyTableButton({ tableEl }: { tableEl: HTMLTableElement | null }) {
   const [copied, setCopied] = useState(false);
@@ -214,7 +240,7 @@ const markdownComponents: Components = {
     </h3>
   ),
   p: ({ children, ...props }) => (
-    <p className="my-1" {...props}>
+    <p className="my-2 leading-relaxed" {...props}>
       {children}
     </p>
   ),
@@ -253,27 +279,54 @@ export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
   // Check for explicit chart blocks
   const chartBlocks = extractChartBlocks(content);
   if (chartBlocks) {
+    const renderWithHighlights = (text: string) => {
+      const segs = splitByHighlight(text);
+      const hasH = segs.some((p) => p.type === "highlight");
+      if (!hasH)
+        return (
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            components={markdownComponents}
+          >
+            {text}
+          </ReactMarkdown>
+        );
+      return (
+        <>
+          {segs.map((part, j) =>
+            part.type === "normal" ? (
+              <ReactMarkdown
+                key={j}
+                remarkPlugins={[remarkGfm]}
+                components={markdownComponents}
+              >
+                {part.text}
+              </ReactMarkdown>
+            ) : (
+              <div
+                key={j}
+                className="inline-block bg-yellow-200/90 text-gray-900 rounded px-0.5 py-0.5"
+                title="نص مقتبس من المستند"
+              >
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={markdownComponents}
+                >
+                  {part.text}
+                </ReactMarkdown>
+              </div>
+            )
+          )}
+        </>
+      );
+    };
     return (
-      <div className="text-sm leading-relaxed">
+      <div className="text-base leading-loose text-gray-900">
         {chartBlocks.map((block, i) => (
           <div key={i}>
-            {block.before && (
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                components={markdownComponents}
-              >
-                {block.before}
-              </ReactMarkdown>
-            )}
+            {block.before && renderWithHighlights(block.before)}
             <ChatChart data={block.chart} />
-            {block.after && (
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                components={markdownComponents}
-              >
-                {block.after}
-              </ReactMarkdown>
-            )}
+            {block.after && renderWithHighlights(block.after)}
           </div>
         ))}
       </div>
@@ -283,14 +336,46 @@ export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
   // Check if there's a table with numeric data
   const tableData = detectTableData(content);
 
+  const parts = splitByHighlight(content);
+  const hasHighlights = parts.some((p) => p.type === "highlight");
+
   return (
-    <div className="text-sm leading-relaxed">
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        components={markdownComponents}
-      >
-        {content}
-      </ReactMarkdown>
+    <div className="text-base leading-loose text-gray-900">
+      {hasHighlights ? (
+        <>
+          {parts.map((part, i) =>
+            part.type === "normal" ? (
+              <ReactMarkdown
+                key={i}
+                remarkPlugins={[remarkGfm]}
+                components={markdownComponents}
+              >
+                {part.text}
+              </ReactMarkdown>
+            ) : (
+              <div
+                key={i}
+                className="inline-block bg-yellow-200/90 text-gray-900 rounded px-0.5 py-0.5"
+                title="نص مقتبس من المستند"
+              >
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={markdownComponents}
+                >
+                  {part.text}
+                </ReactMarkdown>
+              </div>
+            )
+          )}
+        </>
+      ) : (
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          components={markdownComponents}
+        >
+          {content}
+        </ReactMarkdown>
+      )}
       {tableData && (
         <ChatChart
           data={{

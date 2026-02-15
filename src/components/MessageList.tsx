@@ -48,6 +48,42 @@ function getDisplayName(filename: string): string {
   return filename.replace(/\.(pdf|txt)$/i, "");
 }
 
+const ALLOWED_PDF_FILES = "Policies001\\.pdf|PoliciesEn001\\.pdf";
+
+/**
+ * Turn "صفحة N" / "Page N" in context of "من X.pdf" / "from X.pdf" into markdown links
+ * so they open the PDF viewer on that page.
+ */
+function processPageLinksInContent(content: string, locale: Locale): string {
+  if (!content) return content;
+  let result = content;
+  // Arabic: "صفحة 23، صفحة 24، ... من X.pdf"
+  const arRegex = new RegExp(
+    `(صفحة\\s*\\d+(?:\\s*[،,]\\s*صفحة\\s*\\d+)*)\\s*من\\s*(${ALLOWED_PDF_FILES})`,
+    "g"
+  );
+  result = result.replace(arRegex, (_match, pagesPart: string, doc: string) => {
+    const pdfDoc = doc.replace(/\.txt$/i, ".pdf");
+    return pagesPart.replace(/صفحة\s*(\d+)/g, (pagePhrase: string, num: string) => {
+      const url = `/pdfs/${encodeURIComponent(pdfDoc)}#page=${num}`;
+      return `[${pagePhrase}](${url})`;
+    }) + ` من ${pdfDoc}`;
+  });
+  // English: "Page 23, Page 24, ... from X.pdf"
+  const enRegex = new RegExp(
+    `(Page\\s*\\d+(?:\\s*,\\s*Page\\s*\\d+)*)\\s*from\\s*(${ALLOWED_PDF_FILES})`,
+    "gi"
+  );
+  result = result.replace(enRegex, (_match, pagesPart: string, doc: string) => {
+    const pdfDoc = doc.replace(/\.txt$/i, ".pdf");
+    return pagesPart.replace(/Page\s*(\d+)/gi, (pagePhrase: string, num: string) => {
+      const url = `/pdfs/${encodeURIComponent(pdfDoc)}#page=${num}`;
+      return `[${pagePhrase.trim()}](${url})`;
+    }) + ` from ${pdfDoc}`;
+  });
+  return result;
+}
+
 function SourceBadge({
   source,
   locale,
@@ -58,9 +94,14 @@ function SourceBadge({
   const pageLabel = locale === "ar" ? "صفحة" : "Page";
   const displayName = getDisplayName(source.document);
   const hasPage = source.page && source.page > 0;
+
+  // Ensure filename ends with .pdf (some sources come as .txt)
+  const pdfFilename = source.document.replace(/\.txt$/i, ".pdf");
+
+  // Open the PDF directly in a new tab — browser's native viewer handles #page=N
   const pdfUrl = hasPage
-    ? `/pdfs/${encodeURIComponent(source.document)}#page=${source.page}`
-    : `/pdfs/${encodeURIComponent(source.document)}`;
+    ? `/pdfs/${encodeURIComponent(pdfFilename)}#page=${source.page}`
+    : `/pdfs/${encodeURIComponent(pdfFilename)}`;
 
   return (
     <a
@@ -68,14 +109,18 @@ function SourceBadge({
       target="_blank"
       rel="noopener noreferrer"
       className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-lg border border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300 hover:shadow-sm cursor-pointer transition-all active:scale-95"
-      title={hasPage ? `${displayName} - ${pageLabel} ${source.page}` : displayName}
+      title={hasPage ? `${pageLabel} ${source.page} – ${displayName}` : displayName}
     >
       <ExternalLink className="w-3.5 h-3.5 flex-shrink-0" />
-      <span className="truncate max-w-[200px]">{displayName}</span>
-      {hasPage && (
-        <span className="bg-emerald-200/60 text-emerald-800 px-1.5 py-0.5 rounded text-[10px]">
-          {pageLabel} {source.page}
-        </span>
+      {hasPage ? (
+        <>
+          <span className="bg-emerald-200/60 text-emerald-800 px-1.5 py-0.5 rounded font-semibold">
+            {pageLabel} {source.page}
+          </span>
+          <span className="truncate max-w-[160px] text-emerald-600/90">{displayName}</span>
+        </>
+      ) : (
+        <span className="truncate max-w-[200px]">{displayName}</span>
       )}
     </a>
   );
@@ -238,7 +283,7 @@ export default function MessageList({
                 } px-3 sm:px-4 py-2.5 sm:py-3`}
               >
                 {msg.role === "assistant" ? (
-                  <MarkdownRenderer content={msg.content} />
+                  <MarkdownRenderer content={processPageLinksInContent(msg.content, locale)} />
                 ) : (
                   <div className="text-sm whitespace-pre-wrap leading-relaxed">
                     {msg.content}

@@ -8,32 +8,68 @@ import { getClientIP } from "@/lib/utils";
 import type { ChatRequest, Source } from "@/types";
 
 /**
- * Extract sources from text containing [DOCUMENT: name | PAGE: N] markers
- * or 【...】 annotation markers that OpenAI adds.
+ * Extract sources from text containing [DOCUMENT: name | PAGE: N] markers,
+ * 【...】 annotation markers that OpenAI adds, or various other citation formats.
  */
 function extractSourcesFromText(text: string): Source[] {
   const sources: Source[] = [];
+  const add = (doc: string, page?: number) => {
+    const p = page && page > 0 ? page : undefined;
+    if (!sources.some((s) => s.document === doc && (s.page ?? 0) === (p ?? 0))) {
+      sources.push({ document: doc, ...(p != null ? { page: p } : {}) });
+    }
+  };
+
+  let match;
 
   // Pattern 1: [DOCUMENT: name | PAGE: N]
   const regex1 = /\[DOCUMENT:\s*(.+?)\s*\|\s*PAGE:\s*(\d+)\]/g;
-  let match;
   while ((match = regex1.exec(text)) !== null) {
-    const document = match[1].trim();
-    const page = parseInt(match[2], 10);
-    if (!sources.some((s) => s.document === document && s.page === page)) {
-      sources.push({ document, page });
-    }
+    add(match[1].trim(), parseInt(match[2], 10));
   }
 
-  // Pattern 2: 【number:number†filename】 — only add page if second number > 0
+  // Pattern 2: 【number:number†filename】
   const regex2 = /【(\d+):(\d+)†(.+?)】/g;
   while ((match = regex2.exec(text)) !== null) {
-    const pageNum = parseInt(match[2], 10);
-    const document = match[3].trim();
-    const page = pageNum > 0 ? pageNum : undefined;
-    if (!sources.some((s) => s.document === document && (s.page ?? 0) === (page ?? 0))) {
-      sources.push({ document, ...(page != null ? { page } : {}) });
-    }
+    add(match[3].trim(), parseInt(match[2], 10));
+  }
+
+  // Pattern 2b: 【number†filename】 (without second number)
+  const regex2b = /【(\d+)†(.+?)】/g;
+  while ((match = regex2b.exec(text)) !== null) {
+    add(match[2].trim());
+  }
+
+  // Pattern 2c: 【filename】(no numbers, just filename in lenticular brackets)
+  const regex2c = /【((?:Policies001|PoliciesEn001)\.(?:pdf|txt))】/g;
+  while ((match = regex2c.exec(text)) !== null) {
+    add(match[1].trim());
+  }
+
+  // Pattern 3: "صفحة 23، صفحة 24، ... من Policies001.pdf"
+  const arBlock = /(صفحة\s*\d+(?:\s*[،,]\s*صفحة\s*\d+)*)\s*من\s*(Policies001\.pdf|PoliciesEn001\.pdf)/g;
+  while ((match = arBlock.exec(text)) !== null) {
+    const doc = match[2];
+    const pageNums = [...match[1].matchAll(/\d+/g)].map((m) => parseInt(m[0], 10));
+    for (const page of pageNums) add(doc, page);
+  }
+
+  // Pattern 3b: "Page 1, Page 2 from PoliciesEn001.pdf"
+  const enBlock = /(Page\s*\d+(?:\s*,\s*Page\s*\d+)*)\s*from\s*(Policies001\.pdf|PoliciesEn001\.pdf)/gi;
+  while ((match = enBlock.exec(text)) !== null) {
+    const doc = match[2];
+    const pageNums = [...match[1].matchAll(/\d+/g)].map((m) => parseInt(m[0], 10));
+    for (const page of pageNums) add(doc, page);
+  }
+
+  // Pattern 4: standalone "صفحة N" or "page N" near a known filename
+  const standaloneAr = /صفحة\s+(\d+)/g;
+  while ((match = standaloneAr.exec(text)) !== null) {
+    const page = parseInt(match[1], 10);
+    // Determine which file based on context (look ±200 chars around the match)
+    const ctx = text.slice(Math.max(0, match.index - 200), match.index + 200);
+    if (ctx.includes("PoliciesEn001")) add("PoliciesEn001.pdf", page);
+    else add("Policies001.pdf", page);
   }
 
   return sources;
@@ -165,7 +201,7 @@ export async function POST(request: NextRequest) {
         {
           type: "file_search",
           vector_store_ids: [vectorStoreId],
-          max_num_results: 10,
+          max_num_results: 20,
         },
       ],
       tool_choice: "required",
@@ -177,16 +213,12 @@ export async function POST(request: NextRequest) {
     const allSources: Source[] = [];
     let fullText = "";
 
-    // Helper to add a unique source (deduplicate by document name)
+    // Helper: add source, deduplicate by (document + page) so we can show all related pages (e.g. 15+)
     const addSource = (src: Source) => {
-      const existing = allSources.find((s) => s.document === src.document);
-      if (existing) {
-        // Update page if we found a real page and existing has none
-        if (src.page && !existing.page) {
-          existing.page = src.page;
-        }
-        return;
-      }
+      const already = allSources.some(
+        (s) => s.document === src.document && (s.page ?? 0) === (src.page ?? 0)
+      );
+      if (already) return;
       allSources.push(src);
     };
 
@@ -284,14 +316,16 @@ export async function POST(request: NextRequest) {
 
           // Fallback: if no sources found from events, extract from the answer text
           if (allSources.length === 0) {
-            // Try extracting from citation markers in the full text
             for (const src of extractSourcesFromText(fullText)) {
               addSource(src);
             }
-            // Last resort: if we got a real answer but no sources, add known files without page
+          }
+
+          // Extra fallback: scan for any known filename mentions in the answer
+          if (allSources.length === 0) {
             const knownFiles = ["Policies001.pdf", "PoliciesEn001.pdf"];
             for (const kf of knownFiles) {
-              if (fullText.length > 50 && allSources.length === 0) {
+              if (fullText.includes(kf.replace(".pdf", "")) || fullText.includes(kf)) {
                 addSource({ document: kf });
               }
             }
@@ -312,11 +346,22 @@ export async function POST(request: NextRequest) {
             .replace(/\n{3,}/g, "\n\n")
             .trim();
 
+          // ALWAYS send the real answer — never empty it just because sources weren't extracted.
+          // The model already answered from file_search; failing to parse source markers
+          // should not destroy the answer the user saw during streaming.
           const safeAnswer = filterOutput(cleanedText);
+
+          // noSources is true ONLY when the answer itself is empty / "not found"
+          const isNotFoundAnswer =
+            !safeAnswer ||
+            safeAnswer.includes("لم يتم العثور") ||
+            safeAnswer.includes("Not found in the provided");
+          const noSources = allSources.length === 0 && isNotFoundAnswer;
 
           // Log for debugging in dev
           if (process.env.NODE_ENV !== "production") {
             console.log(`[Chat] Sources found: ${allSources.length}`, allSources.map(s => `${s.document}:${s.page}`));
+            console.log(`[Chat] noSources=${noSources}, answerLength=${safeAnswer.length}`);
           }
 
           controller.enqueue(
@@ -325,6 +370,7 @@ export async function POST(request: NextRequest) {
                 type: "done",
                 answer: safeAnswer,
                 sources: allSources,
+                noSources,
               })}\n\n`
             )
           );

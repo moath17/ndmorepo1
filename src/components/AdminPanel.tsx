@@ -23,6 +23,7 @@ import {
   Upload,
   RefreshCw,
   Loader2,
+  Pencil,
 } from "lucide-react";
 import type { Dictionary, Locale } from "@/types";
 
@@ -108,11 +109,13 @@ export default function AdminPanel({ dict, locale }: AdminPanelProps) {
     openaiFileId?: string;
     enabled: boolean;
     addedAt: string;
+    pageCount?: number;
   }>>([]);
   const [togglingFile, setTogglingFile] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadMsg, setUploadMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
   const [syncing, setSyncing] = useState(false);
+  const [cleaning, setCleaning] = useState(false);
 
   const toggleLang = () => {
     const newLocale = isAr ? "en" : "ar";
@@ -177,7 +180,22 @@ export default function AdminPanel({ dict, locale }: AdminPanelProps) {
     if (token) fetchData(token);
   }, [token, fetchData]);
 
-  // Sync managed files when files tab is opened
+  // Load file list from config (single source of truth for enabled state)
+  const loadFilesList = useCallback(async () => {
+    if (!token) return;
+    try {
+      const res = await fetch("/api/admin/files", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ action: "list" }),
+      });
+      const result = await res.json();
+      if (result.files) setManagedFiles(result.files);
+    } catch {
+      // silent
+    }
+  }, [token]);
+
   const syncFiles = useCallback(async () => {
     if (!token) return;
     setSyncing(true);
@@ -189,19 +207,75 @@ export default function AdminPanel({ dict, locale }: AdminPanelProps) {
       });
       const result = await res.json();
       if (result.files) setManagedFiles(result.files);
-      setFilesSynced(true);
+      else await loadFilesList();
     } catch {
       // silent
     } finally {
       setSyncing(false);
     }
-  }, [token]);
+  }, [token, loadFilesList]);
+
+  const cleanFiles = useCallback(async () => {
+    if (!token) return;
+    const msg = isAr
+      ? "هل أنت متأكد؟ سيتم إزالة كل الملفات غير المسموح بها (Policies001، PoliciesEn001) من المتجر والمجلد العام ولا يمكن التراجع."
+      : "Are you sure? This will remove all non-allowed files from the store and public folder. This cannot be undone.";
+    if (!window.confirm(msg)) return;
+    setCleaning(true);
+    setUploadMsg(null);
+    try {
+      const res = await fetch("/api/admin/files", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ action: "clean" }),
+      });
+      const result = await res.json();
+      if (result.success) {
+        if (result.files) setManagedFiles(result.files);
+        else await loadFilesList();
+        const fromStore = result.removedFromStore ?? 0;
+        const fromPublic = result.removedFromPublic ?? 0;
+        if (fromStore > 0 || fromPublic > 0) {
+          setUploadMsg({
+            type: "ok",
+            text: isAr
+              ? `تم التنظيف: ${fromStore} من المتجر، ${fromPublic} من المجلد العام`
+              : `Cleaned: ${fromStore} from store, ${fromPublic} from public folder`,
+          });
+        }
+      } else {
+        setUploadMsg({ type: "err", text: result.error || (isAr ? "فشل التنظيف" : "Clean failed") });
+      }
+    } catch {
+      setUploadMsg({ type: "err", text: isAr ? "خطأ في الاتصال" : "Connection error" });
+    } finally {
+      setCleaning(false);
+    }
+  }, [token, loadFilesList, isAr]);
 
   useEffect(() => {
     if (tab === "files" && token && !filesSynced) {
-      syncFiles();
+      loadFilesList();
+      setFilesSynced(true);
     }
-  }, [tab, token, filesSynced, syncFiles]);
+  }, [tab, token, filesSynced, loadFilesList]);
+
+  const handleEditDisplayName = async (filename: string, currentDisplayName: string) => {
+    if (!token) return;
+    const newName = window.prompt(isAr ? "الاسم العرضي للملف (الاسم الحقيقي):" : "Display name (real name):", currentDisplayName || filename);
+    if (newName == null || newName.trim() === "") return;
+    try {
+      const res = await fetch("/api/admin/files", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ action: "updateDisplayName", filename, displayName: newName.trim() }),
+      });
+      const result = await res.json();
+      if (result.success && result.files) setManagedFiles(result.files);
+    } catch {
+      // silent
+    }
+  };
 
   const handleToggleFile = async (filename: string, enabled: boolean) => {
     if (!token) return;
@@ -217,6 +291,8 @@ export default function AdminPanel({ dict, locale }: AdminPanelProps) {
         setManagedFiles((prev) =>
           prev.map((f) => (f.filename === filename ? { ...f, enabled } : f))
         );
+      } else {
+        await loadFilesList();
       }
     } catch {
       // silent
@@ -557,7 +633,7 @@ export default function AdminPanel({ dict, locale }: AdminPanelProps) {
           </div>
         )}
 
-        {data && tab === "files" && (
+        {tab === "files" && token && (
           <div className="space-y-4">
             {/* Action bar */}
             <div className="flex items-center gap-3 flex-wrap">
@@ -580,6 +656,21 @@ export default function AdminPanel({ dict, locale }: AdminPanelProps) {
                 <RefreshCw className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} />
                 {isAr ? "مزامنة" : "Sync"}
               </button>
+              <button
+                onClick={loadFilesList}
+                className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-sm font-medium text-gray-600 rounded-xl hover:bg-gray-50 transition-colors"
+              >
+                {isAr ? "تحديث القائمة" : "Refresh list"}
+              </button>
+              <button
+                onClick={cleanFiles}
+                disabled={cleaning}
+                className="flex items-center gap-2 px-4 py-2.5 bg-amber-50 border border-amber-200 text-amber-800 text-sm font-medium rounded-xl hover:bg-amber-100 transition-colors disabled:opacity-50"
+                title={isAr ? "إزالة الملفات غير المسموح بها من المتجر والمجلد العام" : "Remove non-allowed files from store and public folder"}
+              >
+                {cleaning ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                {isAr ? "تنظيف المتجر" : "Clean store"}
+              </button>
               {uploadMsg && (
                 <span className={`text-sm font-medium ${uploadMsg.type === "ok" ? "text-emerald-600" : "text-red-500"}`}>
                   {uploadMsg.text}
@@ -587,7 +678,7 @@ export default function AdminPanel({ dict, locale }: AdminPanelProps) {
               )}
             </div>
 
-            {/* Files table with toggle */}
+            {/* Files table: single source (managedFiles from list API) */}
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -599,25 +690,17 @@ export default function AdminPanel({ dict, locale }: AdminPanelProps) {
                       <th className="text-start py-3 px-4 font-medium text-gray-500">{dict.admin.fileName}</th>
                       <th className="text-start py-3 px-4 font-medium text-gray-500">{dict.admin.pages}</th>
                       <th className="text-start py-3 px-4 font-medium text-gray-500">{dict.admin.uploadDate}</th>
-                      <th className="text-start py-3 px-4 font-medium text-gray-500">{dict.admin.fileDate}</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {data.files.map((f, i) => {
-                      const managed = managedFiles.find(
-                        (mf) => mf.filename === f.filename || mf.filename === (f.name || f.filename)
-                      );
-                      const isEnabled = managed ? managed.enabled : true;
-                      const isToggling = togglingFile === (managed?.filename || f.filename);
-
+                    {managedFiles.map((f, i) => {
+                      const isEnabled = f.enabled;
+                      const isToggling = togglingFile === f.filename;
                       return (
                         <tr key={i} className={`border-b border-gray-50 hover:bg-gray-50 ${!isEnabled ? "opacity-50" : ""}`}>
                           <td className="py-3 px-4">
                             <button
-                              onClick={() => {
-                                const fn = managed?.filename || f.filename;
-                                handleToggleFile(fn, !isEnabled);
-                              }}
+                              onClick={() => handleToggleFile(f.filename, !isEnabled)}
                               disabled={isToggling}
                               className="transition-colors"
                               title={isEnabled ? (isAr ? "مفعّل — اضغط للإيقاف" : "Active — click to disable") : (isAr ? "معطّل — اضغط للتفعيل" : "Disabled — click to enable")}
@@ -633,28 +716,46 @@ export default function AdminPanel({ dict, locale }: AdminPanelProps) {
                           </td>
                           <td className="py-3 px-4 text-gray-700">
                             <div className="flex items-center gap-2">
-                              <FileText className="w-4 h-4 text-primary-500 flex-shrink-0" />
-                              <div>
-                                <div className="font-medium">{f.name || f.filename}</div>
-                                {f.name && <div className="text-[11px] text-gray-400 mt-0.5">{f.filename}</div>}
-                              </div>
+                              <a
+                                href={`/pdfs/${encodeURIComponent(
+                                  /\.txt$/i.test(f.filename) ? f.filename.replace(/\.txt$/i, ".pdf") : f.filename
+                                )}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 hover:text-primary-600 hover:underline min-w-0"
+                              >
+                                <FileText className="w-4 h-4 text-primary-500 flex-shrink-0" />
+                                <div className="min-w-0">
+                                  <div className="font-medium">
+                                    {f.displayName && f.displayName.trim() !== "" && f.displayName !== f.filename
+                                      ? f.displayName
+                                      : f.filename}
+                                  </div>
+                                  <div className="text-[11px] text-gray-400 mt-0.5 truncate">{f.filename}</div>
+                                </div>
+                              </a>
+                              <button
+                                type="button"
+                                onClick={(e) => { e.preventDefault(); handleEditDisplayName(f.filename, f.displayName || f.filename); }}
+                                className="p-1.5 rounded-md text-gray-400 hover:text-primary-600 hover:bg-gray-100"
+                                title={isAr ? "تغيير الاسم العرضي" : "Edit display name"}
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
                             </div>
                           </td>
-                          <td className="py-3 px-4 text-gray-600">{f.pageCount || "-"}</td>
+                          <td className="py-3 px-4 text-gray-600">{f.pageCount ?? "-"}</td>
                           <td className="py-3 px-4 text-gray-500 text-xs">
                             <div className="flex items-center gap-1">
                               <Calendar className="w-3 h-3" />
-                              {f.uploadDate ? formatDate(f.uploadDate) : "-"}
+                              {f.addedAt ? formatDate(f.addedAt) : "-"}
                             </div>
-                          </td>
-                          <td className="py-3 px-4 text-gray-500 text-xs">
-                            {f.fileDate ? formatDate(f.fileDate) : "-"}
                           </td>
                         </tr>
                       );
                     })}
-                    {data.files.length === 0 && (
-                      <tr><td colSpan={5} className="py-12 text-center text-gray-400">{dict.admin.noData}</td></tr>
+                    {managedFiles.length === 0 && (
+                      <tr><td colSpan={4} className="py-12 text-center text-gray-400">{dict.admin.noData}</td></tr>
                     )}
                   </tbody>
                 </table>

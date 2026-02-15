@@ -4,9 +4,12 @@ import {
   toggleFile,
   uploadFile,
   getFilesWithConfig,
+  updateFileDisplayName,
+  removeNonAllowedFilesFromVectorStore,
+  cleanPublicPdfs,
 } from "@/lib/file-manager";
 
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "Majid@123";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "ndmo2024";
 
 // Simple token verification (same as main admin route)
 function generateToken(pw: string): string {
@@ -65,7 +68,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Handle JSON actions
-    const body = await request.json();
+    let body: { action?: string; [k: string]: unknown };
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        { error: "Invalid or missing JSON body" },
+        { status: 400 }
+      );
+    }
     const { action } = body;
 
     if (action === "sync") {
@@ -89,6 +100,35 @@ export async function POST(request: NextRequest) {
     if (action === "list") {
       const files = getFilesWithConfig();
       return NextResponse.json({ success: true, files });
+    }
+
+    if (action === "updateDisplayName") {
+      const { filename, displayName } = body;
+      if (!filename || typeof displayName !== "string") {
+        return NextResponse.json({ error: "Missing filename or displayName" }, { status: 400 });
+      }
+      const result = updateFileDisplayName(filename, displayName);
+      if (!result.success) {
+        return NextResponse.json({ error: result.error }, { status: 400 });
+      }
+      return NextResponse.json({ success: true, files: getFilesWithConfig() });
+    }
+
+    if (action === "clean") {
+      const vsResult = await removeNonAllowedFilesFromVectorStore();
+      const pdfResult = cleanPublicPdfs();
+      if (!vsResult.success) {
+        return NextResponse.json(
+          { success: false, error: vsResult.error, removedFromStore: vsResult.removed, removedFromPublic: pdfResult.removed },
+          { status: 500 }
+        );
+      }
+      return NextResponse.json({
+        success: true,
+        removedFromStore: vsResult.removed,
+        removedFromPublic: pdfResult.removed,
+        files: getFilesWithConfig(),
+      });
     }
 
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });

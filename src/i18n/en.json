@@ -11,6 +11,7 @@
     "send": "Send",
     "thinking": "Searching documents and generating answer...",
     "notFound": "Not found in the provided documents.",
+    "noSources": "No sources available. Please enable at least one file from the Files tab in the admin panel.",
     "sources": "Sources",
     "errorGeneric": "Something went wrong. Please try again.",
     "errorRateLimit": "Too many requests. Please wait a moment and try again.",

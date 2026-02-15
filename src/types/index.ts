@@ -38,6 +38,7 @@ export interface Dictionary {
     send: string;
     thinking: string;
     notFound: string;
+    noSources: string;
     sources: string;
     errorGeneric: string;
     errorRateLimit: string;

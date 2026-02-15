@@ -272,10 +272,18 @@ export default function ChatInterface({ dict, locale }: ChatInterfaceProps) {
                   )
                 );
               } else if (json.type === "done") {
-                const safeAnswer = json.answer || streamedText;
+                const noSources = json.noSources === true;
+                const safeAnswer = json.answer ?? streamedText;
                 const sources: Source[] = json.sources || [];
 
-                let answerText = safeAnswer;
+                // Use the actual answer from backend — never replace a real answer with "no sources"
+                let answerText = safeAnswer || "";
+
+                // Only show "no sources" message if backend explicitly says so AND there's no real content
+                if (noSources && !answerText.trim()) {
+                  answerText = dict.chat.noSources;
+                }
+
                 const sourcesLineRegex =
                   /\n?\n?(Sources:|المصادر:)[\s\S]*$/;
                 const sourcesMatch = answerText.match(sourcesLineRegex);
@@ -288,7 +296,7 @@ export default function ChatInterface({ dict, locale }: ChatInterfaceProps) {
                   answerText.includes("Not found in the provided");
 
                 const finalSources =
-                  !isNotFound && sources.length > 0 ? sources : undefined;
+                  isNotFound ? undefined : (sources.length > 0 ? sources : undefined);
 
                 setMessages((prev) =>
                   prev.map((m) =>

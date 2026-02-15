@@ -16,6 +16,20 @@
   body {
     @apply bg-gray-50 text-gray-900 antialiased;
   }
+
+  body.font-arabic {
+    font-family: "Noto Kufi Arabic", "Noto Sans Arabic", sans-serif;
+    line-height: 1.75;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* أوضح عند تحديد النص لأخذ المعلومة */
+  ::selection {
+    background-color: #fef08a;
+    color: #1f2937;
+  }
 }
 
 @layer components {

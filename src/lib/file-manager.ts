@@ -3,12 +3,24 @@
  * Tracks which files are enabled/disabled in the vector store.
  */
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync } from "fs";
-import { resolve } from "path";
+import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync, readdirSync, unlinkSync, statSync } from "fs";
+import { resolve, join } from "path";
 import { getOpenAIClient, getVectorStoreId } from "./openai";
 
 const DATA_DIR = resolve(process.cwd(), "data");
 const CONFIG_FILE = resolve(DATA_DIR, "files-config.json");
+
+/** Only these files are shown and used (Arabic + English). Add more later if needed. */
+const ALLOWED_FILENAMES = new Set([
+  "Policies001.pdf",
+  "Policies001.txt",
+  "PoliciesEn001.pdf",
+  "PoliciesEn001.txt",
+]);
+
+function isAllowedFilename(filename: string): boolean {
+  return ALLOWED_FILENAMES.has(filename);
+}
 
 function ensureDataDir() {
   if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
@@ -19,8 +31,10 @@ export interface FileConfig {
   filename: string;
   /** Display name */
   displayName: string;
-  /** OpenAI file ID in the vector store */
+  /** OpenAI file ID (for create when re-enabling) */
   openaiFileId?: string;
+  /** Vector store file ID (for delete when disabling) */
+  vectorStoreFileId?: string;
   /** Whether this file is active (searched by chat) */
   enabled: boolean;
   /** When the file was added */
@@ -66,30 +80,33 @@ export async function syncFilesFromVectorStore(): Promise<FileConfig[]> {
     const vsFileIds = new Set<string>();
 
     for (const vsFile of vsFiles.data) {
-      vsFileIds.add(vsFile.id);
+      const vsId = (vsFile as { id: string }).id;
+      const fId = (vsFile as { file_id?: string }).file_id ?? vsId;
+      vsFileIds.add(vsId);
 
-      // Check if we already track this file
-      const existing = data.files.find((f) => f.openaiFileId === vsFile.id);
-      if (existing) continue;
+      const existing = data.files.find(
+        (f) => f.openaiFileId === fId || f.vectorStoreFileId === vsId
+      );
+      if (existing) {
+        existing.vectorStoreFileId = vsId;
+        existing.openaiFileId = fId;
+        continue;
+      }
 
-      // Get file details
       try {
-        const fileDetail = await client.files.retrieve(vsFile.id);
+        const fileDetail = await client.files.retrieve(fId);
+        const name = (fileDetail as { filename?: string }).filename || fId;
+        if (!isAllowedFilename(name)) continue;
         data.files.push({
-          filename: fileDetail.filename || vsFile.id,
-          displayName: (fileDetail.filename || vsFile.id).replace(/\.(pdf|txt)$/i, ""),
-          openaiFileId: vsFile.id,
+          filename: name,
+          displayName: name.replace(/\.(pdf|txt)$/i, ""),
+          openaiFileId: fId,
+          vectorStoreFileId: vsId,
           enabled: true,
           addedAt: new Date().toISOString(),
         });
       } catch {
-        data.files.push({
-          filename: vsFile.id,
-          displayName: vsFile.id,
-          openaiFileId: vsFile.id,
-          enabled: true,
-          addedAt: new Date().toISOString(),
-        });
+        continue;
       }
     }
 
@@ -121,16 +138,15 @@ export async function toggleFile(
   if (file.enabled === enabled) return { success: true };
 
   try {
-    if (!enabled && file.openaiFileId) {
-      // Disable: remove from vector store (but keep the OpenAI file)
+    if (!enabled && (file.vectorStoreFileId || file.openaiFileId)) {
+      const idToDelete = file.vectorStoreFileId ?? file.openaiFileId;
       try {
-        await client.vectorStores.files.del(vectorStoreId, file.openaiFileId);
+        await client.vectorStores.files.del(vectorStoreId, idToDelete!);
       } catch {
         // May already be removed
       }
       file.enabled = false;
     } else if (enabled && file.openaiFileId) {
-      // Enable: re-add to vector store
       await client.vectorStores.files.create(vectorStoreId, {
         file_id: file.openaiFileId,
       });
@@ -175,8 +191,7 @@ export async function uploadFile(
       purpose: "assistants",
     });
 
-    // Add to vector store
-    await client.vectorStores.files.create(vectorStoreId, {
+    const vsFile = await client.vectorStores.files.create(vectorStoreId, {
       file_id: fileResponse.id,
     });
 
@@ -186,11 +201,12 @@ export async function uploadFile(
     const destPath = resolve(publicPdfsDir, originalFilename);
     writeFileSync(destPath, fileBuffer);
 
-    // Track in config
+    const vsFileId = (vsFile as { id: string }).id;
     const newFile: FileConfig = {
       filename: originalFilename,
       displayName: displayName || originalFilename.replace(/\.(pdf|txt)$/i, ""),
       openaiFileId: fileResponse.id,
+      vectorStoreFileId: vsFileId,
       enabled: true,
       addedAt: new Date().toISOString(),
     };
@@ -206,8 +222,103 @@ export async function uploadFile(
 }
 
 /**
- * Get the list of all tracked files with their config.
+ * Update display name for a file.
+ */
+export function updateFileDisplayName(
+  filename: string,
+  displayName: string
+): { success: boolean; error?: string } {
+  const data = loadFilesConfig();
+  const file = data.files.find((f) => f.filename === filename);
+  if (!file) return { success: false, error: "File not found" };
+  file.displayName = displayName.trim() || file.filename.replace(/\.(pdf|txt)$/i, "");
+  saveFilesConfig(data);
+  return { success: true };
+}
+
+/**
+ * Remove from the vector store all files that are NOT in the allowed list.
+ * Also updates files-config.json to only keep allowed files.
+ * Call this so the chat uses only Policies001 and PoliciesEn001.
+ */
+export async function removeNonAllowedFilesFromVectorStore(): Promise<{
+  success: boolean;
+  removed: number;
+  error?: string;
+}> {
+  const vectorStoreId = getVectorStoreId();
+  if (!vectorStoreId) return { success: false, removed: 0, error: "No vector store configured" };
+
+  const client = getOpenAIClient();
+  const data = loadFilesConfig();
+  let removed = 0;
+
+  try {
+    const vsFiles = await client.vectorStores.files.list(vectorStoreId);
+    const vsList = vsFiles.data ?? [];
+
+    for (const vsFile of vsList) {
+      const vsFileId = (vsFile as { id: string }).id;
+      const openaiFileId = (vsFile as { file_id?: string }).file_id ?? vsFileId;
+
+      let filename: string;
+      try {
+        const fileDetail = await client.files.retrieve(openaiFileId);
+        filename = (fileDetail as { filename?: string }).filename || openaiFileId;
+      } catch {
+        filename = openaiFileId;
+      }
+
+      if (!isAllowedFilename(filename)) {
+        try {
+          await client.vectorStores.files.del(vectorStoreId, vsFileId);
+          removed++;
+        } catch {
+          // continue
+        }
+      }
+    }
+
+    data.files = data.files.filter((f) => isAllowedFilename(f.filename));
+    saveFilesConfig(data);
+    return { success: true, removed };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Unknown error";
+    return { success: false, removed: 0, error: msg };
+  }
+}
+
+/**
+ * Remove from public/pdfs any file that is not in the allowed list (Policies001.pdf, PoliciesEn001.pdf).
+ */
+export function cleanPublicPdfs(): { success: boolean; removed: number; error?: string } {
+  const dir = resolve(process.cwd(), "public", "pdfs");
+  if (!existsSync(dir)) return { success: true, removed: 0 };
+  let removed = 0;
+  try {
+    const names = readdirSync(dir);
+    for (const name of names) {
+      const fullPath = join(dir, name);
+      if (!existsSync(fullPath) || isAllowedFilename(name)) continue;
+      try {
+        if (statSync(fullPath).isFile()) {
+          unlinkSync(fullPath);
+          removed++;
+        }
+      } catch {
+        // skip
+      }
+    }
+    return { success: true, removed };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Unknown error";
+    return { success: false, removed: 0, error: msg };
+  }
+}
+
+/**
+ * Get the list of all tracked files with their config (only allowed files).
  */
 export function getFilesWithConfig(): FileConfig[] {
-  return loadFilesConfig().files;
+  return loadFilesConfig().files.filter((f) => isAllowedFilename(f.filename));
 }
