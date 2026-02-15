@@ -338,10 +338,17 @@ export async function POST(request: NextRequest) {
             return (a.page || 0) - (b.page || 0);
           });
 
-          // Clean citation markers from the answer text
+          // Clean citation markers and page-number blocks from the answer text
           let cleanedText = fullText
             .replace(/【\d+:\d+†.+?】/g, "")
             .replace(/\[DOCUMENT:\s*.+?\s*\|\s*PAGE:\s*\d+\]/g, "")
+            // Remove Arabic "صفحة N، صفحة N، ... من X.pdf" blocks (so they don't fill the answer)
+            .replace(/(صفحة\s*\d+(?:\s*[،,]\s*صفحة\s*\d+)*)\s*من\s*(Policies001|PoliciesEn001)\.(pdf|txt)/gi, "")
+            // Remove English "Page N, Page N, ... from X.pdf" blocks
+            .replace(/(Page\s*\d+(?:\s*,\s*Page\s*\d+)*)\s*from\s*(Policies001|PoliciesEn001)\.(pdf|txt)/gi, "")
+            // Remove whole lines that are only page lists (Arabic or English)
+            .replace(/^[ \t]*(صفحة\s*\d+(?:\s*[،,]\s*صفحة\s*\d+)*)[ \t]*$/gm, "")
+            .replace(/^[ \t]*(Page\s*\d+(?:\s*,\s*Page\s*\d+)*)[ \t]*$/gim, "")
             .replace(/\n?\n?(Sources:|المصادر:)[\s\S]*$/m, "")
             .replace(/\n{3,}/g, "\n\n")
             .trim();
