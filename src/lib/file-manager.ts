@@ -169,6 +169,9 @@ export async function uploadFile(
   originalFilename: string,
   displayName?: string
 ): Promise<{ success: boolean; error?: string; file?: FileConfig }> {
+  if (!isAllowedFilename(originalFilename)) {
+    return { success: false, error: "Only Policies001.pdf and PoliciesEn001.pdf are allowed." };
+  }
   const vectorStoreId = getVectorStoreId();
   if (!vectorStoreId) return { success: false, error: "No vector store configured" };
 
