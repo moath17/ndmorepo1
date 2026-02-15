@@ -198,11 +198,13 @@ export async function uploadFile(
       file_id: fileResponse.id,
     });
 
-    // Copy to public/pdfs for direct access
-    const publicPdfsDir = resolve(process.cwd(), "public", "pdfs");
-    if (!existsSync(publicPdfsDir)) mkdirSync(publicPdfsDir, { recursive: true });
-    const destPath = resolve(publicPdfsDir, originalFilename);
-    writeFileSync(destPath, fileBuffer);
+    // Copy to public/pdfs for direct access (skip on Vercel: read-only filesystem)
+    if (process.env.VERCEL !== "1") {
+      const publicPdfsDir = resolve(process.cwd(), "public", "pdfs");
+      if (!existsSync(publicPdfsDir)) mkdirSync(publicPdfsDir, { recursive: true });
+      const destPath = resolve(publicPdfsDir, originalFilename);
+      writeFileSync(destPath, fileBuffer);
+    }
 
     const vsFileId = (vsFile as { id: string }).id;
     const newFile: FileConfig = {
@@ -295,6 +297,7 @@ export async function removeNonAllowedFilesFromVectorStore(): Promise<{
  * Remove from public/pdfs any file that is not in the allowed list (Policies001.pdf, PoliciesEn001.pdf).
  */
 export function cleanPublicPdfs(): { success: boolean; removed: number; error?: string } {
+  if (process.env.VERCEL === "1") return { success: true, removed: 0 };
   const dir = resolve(process.cwd(), "public", "pdfs");
   if (!existsSync(dir)) return { success: true, removed: 0 };
   let removed = 0;
