@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
 
     if (action === "toggle") {
       const { filename, enabled } = body;
-      if (!filename || typeof enabled !== "boolean") {
+      if (typeof filename !== "string" || !filename.trim() || typeof enabled !== "boolean") {
         return NextResponse.json({ error: "Missing filename or enabled" }, { status: 400 });
       }
       const result = await toggleFile(filename, enabled);
@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
 
     if (action === "updateDisplayName") {
       const { filename, displayName } = body;
-      if (!filename || typeof displayName !== "string") {
+      if (typeof filename !== "string" || !filename.trim() || typeof displayName !== "string") {
         return NextResponse.json({ error: "Missing filename or displayName" }, { status: 400 });
       }
       const result = updateFileDisplayName(filename, displayName);

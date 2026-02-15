@@ -50,7 +50,7 @@ function extractSourcesFromText(text: string): Source[] {
   const arBlock = /(صفحة\s*\d+(?:\s*[،,]\s*صفحة\s*\d+)*)\s*من\s*(Policies001\.pdf|PoliciesEn001\.pdf)/g;
   while ((match = arBlock.exec(text)) !== null) {
     const doc = match[2];
-    const pageNums = [...match[1].matchAll(/\d+/g)].map((m) => parseInt(m[0], 10));
+    const pageNums = Array.from(match[1].matchAll(/\d+/g), (m) => parseInt(m[0], 10));
     for (const page of pageNums) add(doc, page);
   }
 
@@ -58,7 +58,7 @@ function extractSourcesFromText(text: string): Source[] {
   const enBlock = /(Page\s*\d+(?:\s*,\s*Page\s*\d+)*)\s*from\s*(Policies001\.pdf|PoliciesEn001\.pdf)/gi;
   while ((match = enBlock.exec(text)) !== null) {
     const doc = match[2];
-    const pageNums = [...match[1].matchAll(/\d+/g)].map((m) => parseInt(m[0], 10));
+    const pageNums = Array.from(match[1].matchAll(/\d+/g), (m) => parseInt(m[0], 10));
     for (const page of pageNums) add(doc, page);
   }
 
