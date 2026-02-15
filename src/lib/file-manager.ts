@@ -1,7 +1,6 @@
 /**
  * File manager for admin panel.
  * Tracks which files are enabled/disabled in the vector store.
- * Only Policies001 and PoliciesEn001 are allowed; the admin list and chat use these two documents only.
  */
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync, readdirSync, unlinkSync, statSync } from "fs";
