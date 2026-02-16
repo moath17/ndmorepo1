@@ -260,10 +260,15 @@ export default function ChatInterface({ dict, locale }: ChatInterfaceProps) {
                   setStreamPhase("generating");
                 }
                 streamedText += json.text;
-                // Clean citation markers for display
+                // Clean citation markers and page-number blocks for display
                 const displayText = streamedText
                   .replace(/【\d+:\d+†.+?】/g, "")
-                  .replace(/\[DOCUMENT:\s*.+?\s*\|\s*PAGE:\s*\d+\]/g, "");
+                  .replace(/【\d+†.+?】/g, "")
+                  .replace(/\[DOCUMENT:\s*.+?\s*\|\s*PAGE:\s*\d+\]/g, "")
+                  .replace(/(صفحة\s*\d+\s*[،,]\s*)+صفحة\s*\d+/g, "")
+                  .replace(/صفحة\s*\d+\s*من\s*\S+/g, "")
+                  .replace(/(Page\s*\d+\s*,\s*)+Page\s*\d+/gi, "")
+                  .replace(/\n{3,}/g, "\n\n");
                 setMessages((prev) =>
                   prev.map((m) =>
                     m.id === assistantId
