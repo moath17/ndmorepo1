@@ -50,6 +50,23 @@ function getDisplayName(filename: string): string {
 
 // PDF files that actually exist in public/pdfs/
 const AVAILABLE_PDFS = new Set(["Policies001.pdf", "PoliciesEn001.pdf"]);
+
+// Map alternative/long filenames to the actual PDF file in public/pdfs/
+const PDF_ALIAS_MAP: Record<string, string> = {
+  "مكتب إدارة البيانات الوطنية وضوابط ومواصفات إدارة البيانات الوطنية وحوكمتها وحماية البيانات الشخصية.pdf": "Policies001.pdf",
+  "PoliciesAr.pdf": "Policies001.pdf",
+  "National Data Management Office Data Management, Governance, and Personal Data Protection Standards.pdf": "PoliciesEn001.pdf",
+  "PoliciesEn-b.pdf": "PoliciesEn001.pdf",
+};
+
+/** Resolve a source filename to the actual available PDF (or null). */
+function resolveAvailablePdf(filename: string): string | null {
+  const pdf = filename.replace(/\.txt$/i, ".pdf");
+  if (AVAILABLE_PDFS.has(pdf)) return pdf;
+  const alias = PDF_ALIAS_MAP[pdf];
+  if (alias && AVAILABLE_PDFS.has(alias)) return alias;
+  return null;
+}
 const ALLOWED_PDF_FILES = "Policies001\\.pdf|PoliciesEn001\\.pdf";
 
 /**
@@ -97,15 +114,14 @@ function SourceBadge({
   const displayName = getDisplayName(source.document);
   const hasPage = source.page && source.page > 0;
 
-  // Ensure filename ends with .pdf (some sources come as .txt)
-  const pdfFilename = source.document.replace(/\.txt$/i, ".pdf");
-  const isAvailable = AVAILABLE_PDFS.has(pdfFilename);
+  // Resolve to an actual available PDF (handles aliases like long Arabic names)
+  const resolvedPdf = resolveAvailablePdf(source.document);
 
   // Clickable link only if the PDF actually exists in public/pdfs/
-  if (isAvailable) {
+  if (resolvedPdf) {
     const pdfUrl = hasPage
-      ? `/pdfs/${encodeURIComponent(pdfFilename)}#page=${source.page}`
-      : `/pdfs/${encodeURIComponent(pdfFilename)}`;
+      ? `/pdfs/${encodeURIComponent(resolvedPdf)}#page=${source.page}`
+      : `/pdfs/${encodeURIComponent(resolvedPdf)}`;
 
     return (
       <a
