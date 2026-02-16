@@ -48,6 +48,8 @@ function getDisplayName(filename: string): string {
   return filename.replace(/\.(pdf|txt)$/i, "");
 }
 
+// PDF files that actually exist in public/pdfs/
+const AVAILABLE_PDFS = new Set(["Policies001.pdf", "PoliciesEn001.pdf"]);
 const ALLOWED_PDF_FILES = "Policies001\\.pdf|PoliciesEn001\\.pdf";
 
 /**
@@ -97,32 +99,54 @@ function SourceBadge({
 
   // Ensure filename ends with .pdf (some sources come as .txt)
   const pdfFilename = source.document.replace(/\.txt$/i, ".pdf");
+  const isAvailable = AVAILABLE_PDFS.has(pdfFilename);
 
-  // Open the PDF directly in a new tab — browser's native viewer handles #page=N
-  const pdfUrl = hasPage
-    ? `/pdfs/${encodeURIComponent(pdfFilename)}#page=${source.page}`
-    : `/pdfs/${encodeURIComponent(pdfFilename)}`;
+  // Clickable link only if the PDF actually exists in public/pdfs/
+  if (isAvailable) {
+    const pdfUrl = hasPage
+      ? `/pdfs/${encodeURIComponent(pdfFilename)}#page=${source.page}`
+      : `/pdfs/${encodeURIComponent(pdfFilename)}`;
 
+    return (
+      <a
+        href={pdfUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-lg border border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300 hover:shadow-sm cursor-pointer transition-all active:scale-95"
+        title={hasPage ? `${pageLabel} ${source.page} – ${displayName}` : displayName}
+      >
+        <ExternalLink className="w-3.5 h-3.5 flex-shrink-0" />
+        {hasPage ? (
+          <>
+            <span className="bg-emerald-200/60 text-emerald-800 px-1.5 py-0.5 rounded font-semibold">
+              {pageLabel} {source.page}
+            </span>
+            <span className="truncate max-w-[160px] text-emerald-600/90">{displayName}</span>
+          </>
+        ) : (
+          <span className="truncate max-w-[200px]">{displayName}</span>
+        )}
+      </a>
+    );
+  }
+
+  // Non-clickable badge for PDFs not in public/pdfs/ — show Arabic display name clearly
   return (
-    <a
-      href={pdfUrl}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-lg border border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300 hover:shadow-sm cursor-pointer transition-all active:scale-95"
+    <span
+      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 text-gray-600 text-xs font-semibold rounded-lg border border-gray-200"
       title={hasPage ? `${pageLabel} ${source.page} – ${displayName}` : displayName}
     >
-      <ExternalLink className="w-3.5 h-3.5 flex-shrink-0" />
       {hasPage ? (
         <>
-          <span className="bg-emerald-200/60 text-emerald-800 px-1.5 py-0.5 rounded font-semibold">
+          <span className="bg-gray-200/60 text-gray-700 px-1.5 py-0.5 rounded font-semibold">
             {pageLabel} {source.page}
           </span>
-          <span className="truncate max-w-[160px] text-emerald-600/90">{displayName}</span>
+          <span className="truncate max-w-[200px]">{displayName}</span>
         </>
       ) : (
-        <span className="truncate max-w-[200px]">{displayName}</span>
+        <span className="truncate max-w-[240px]">{displayName}</span>
       )}
-    </a>
+    </span>
   );
 }
 
