@@ -21,7 +21,10 @@ const ALLOWED_FILENAMES = new Set([
 ]);
 
 function isAllowedFilename(filename: string): boolean {
-  return ALLOWED_FILENAMES.has(filename);
+  if (ALLOWED_FILENAMES.has(filename)) return true;
+  // Allow per-page files like Policies001_page_045.txt
+  if (/^(Policies001|PoliciesEn001)_page_\d+\.(txt|pdf)$/i.test(filename)) return true;
+  return false;
 }
 
 function ensureDataDir() {

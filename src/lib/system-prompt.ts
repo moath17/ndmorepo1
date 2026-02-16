@@ -16,7 +16,12 @@ STRICT RULES — you MUST follow every one without exception:
 4. Format your response EXACTLY as follows:
    a) Provide a complete, well-written answer based ONLY on the retrieved content.
    b) Do NOT include any source citations, references, document names, or page numbers inside your answer text. The system automatically displays clickable source badges below your answer — so you must NEVER write "Sources:", "المصادر:", "[DocumentName]", "Page X", or any similar citation text in your response body. Just write the answer.
-   c) SOURCE PAGE NUMBERS — list only the MOST RELEVANT pages (maximum 15): Pick the most important pages from the retrieved chunks. Append at the end of your response (after the answer, on a new line) one [DOCUMENT: exact_filename | PAGE: N] for each page. Example: [DOCUMENT: Policies001.pdf | PAGE: 50] [DOCUMENT: Policies001.pdf | PAGE: 62]. Use the exact filename from the source. NEVER list more than 15 page markers. NEVER write page numbers as plain text like "صفحة 1، صفحة 2" — only use the [DOCUMENT: ... | PAGE: N] format.
+   c) SOURCE PAGE NUMBERS — CRITICAL RULES:
+      - Each retrieved chunk starts with a [DOCUMENT: filename | PAGE: N] marker OR has a filename like "Policies001_page_045.txt" that contains the page number.
+      - ONLY use page numbers that appear in these markers or filenames. NEVER guess or infer page numbers.
+      - If a chunk starts with [DOCUMENT: Policies001.pdf | PAGE: 89], cite PAGE 89. If a chunk comes from file "Policies001_page_089.txt", cite PAGE 89 of Policies001.pdf.
+      - Append at the end of your response (after the answer, on a new line) one [DOCUMENT: original_filename.pdf | PAGE: N] for each relevant page. Example: [DOCUMENT: Policies001.pdf | PAGE: 89] [DOCUMENT: Policies001.pdf | PAGE: 90].
+      - NEVER list more than 10 page markers. NEVER write page numbers as plain text like "صفحة 1، صفحة 2" — only use the [DOCUMENT: ... | PAGE: N] format.
 
 5. NEVER fabricate, guess, or invent information. Only use what actually appears in the retrieved chunks.
 

@@ -37,6 +37,12 @@ const DOCUMENT_NAME_MAP: Record<string, string> = {
 
 function getDisplayName(filename: string): string {
   if (DOCUMENT_NAME_MAP[filename]) return DOCUMENT_NAME_MAP[filename];
+  // Handle per-page filenames like Policies001_page_089.txt → resolve to original
+  const pageMatch = filename.match(/^(.+?)_page_\d+\.(txt|pdf)$/i);
+  if (pageMatch) {
+    const originalPdf = pageMatch[1] + ".pdf";
+    if (DOCUMENT_NAME_MAP[originalPdf]) return DOCUMENT_NAME_MAP[originalPdf];
+  }
   for (const [key, value] of Object.entries(DOCUMENT_NAME_MAP)) {
     if (
       filename.includes(key.replace(".pdf", "")) ||
@@ -63,6 +69,12 @@ const PDF_ALIAS_MAP: Record<string, string> = {
 function resolveAvailablePdf(filename: string): string | null {
   const pdf = filename.replace(/\.txt$/i, ".pdf");
   if (AVAILABLE_PDFS.has(pdf)) return pdf;
+  // Handle per-page filenames: Policies001_page_089.txt → Policies001.pdf
+  const pageMatch = pdf.match(/^(.+?)_page_\d+\.pdf$/i);
+  if (pageMatch) {
+    const originalPdf = pageMatch[1] + ".pdf";
+    if (AVAILABLE_PDFS.has(originalPdf)) return originalPdf;
+  }
   const alias = PDF_ALIAS_MAP[pdf];
   if (alias && AVAILABLE_PDFS.has(alias)) return alias;
   return null;

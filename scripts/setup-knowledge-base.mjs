@@ -139,7 +139,7 @@ async function extractPages(pdfPath) {
   return { pageTexts, totalPages: data.numpages };
 }
 
-// --- Format pages with markers ---
+// --- Format pages with markers (legacy single-file mode) ---
 function formatPages(filename, pageTexts) {
   const sections = [];
   for (let i = 0; i < pageTexts.length; i++) {
@@ -148,6 +148,11 @@ function formatPages(filename, pageTexts) {
     }
   }
   return sections.join("\n\n---\n\n");
+}
+
+// --- Format a single page with marker (per-page file mode) ---
+function formatSinglePage(filename, pageNumber, pageText) {
+  return `[DOCUMENT: ${filename} | PAGE: ${pageNumber}]\n${pageText}`;
 }
 
 // --- OCR: extract single page from PDF ---
@@ -255,18 +260,19 @@ async function main() {
     console.log(`Created Vector Store: ${vectorStoreId}`);
   }
 
-  // Step 2: Process each PDF
+  // Step 2: Process each PDF — upload each page as a separate file
   let skippedCount = 0;
   for (const pdfFile of PDF_FILES) {
     const pdfPath = resolve(process.cwd(), PDF_DIR, pdfFile);
     const pdfBuffer = readFileSync(pdfPath);
     const fileHash = computeFileHash(pdfBuffer);
 
-    // Check if already processed
+    // Check if already processed (use hash + "-perpage" to distinguish from old single-file uploads)
+    const perPageHash = fileHash + "-perpage";
     if (!FORCE) {
-      const existing = isAlreadyProcessed(fileHash);
+      const existing = isAlreadyProcessed(perPageHash);
       if (existing) {
-        console.log(`\n⏭️  Skipping ${pdfFile} (already processed as "${existing.filename}")`);
+        console.log(`\n⏭️  Skipping ${pdfFile} (already processed per-page as "${existing.filename}")`);
         skippedCount++;
         continue;
       }
@@ -278,63 +284,73 @@ async function main() {
     // OCR enhancement for image-based pages
     let finalPageTexts = pageTexts;
     if (WITH_OCR) {
-      const pdfBuffer = readFileSync(pdfPath);
-      finalPageTexts = await enhanceWithOCR(pdfBuffer, pageTexts, pdfFile);
+      const pdfBuf2 = readFileSync(pdfPath);
+      finalPageTexts = await enhanceWithOCR(pdfBuf2, pageTexts, pdfFile);
     }
-    
-    // Format with markers
-    const formattedContent = formatPages(pdfFile, finalPageTexts);
-    console.log(`   Formatted text size: ${(formattedContent.length / 1024).toFixed(0)} KB`);
 
-    // Upload to OpenAI Files API
-    console.log(`   Uploading to OpenAI Files API...`);
-    const txtFilename = pdfFile.replace(".pdf", ".txt");
-    const blob = new Blob([formattedContent], { type: "text/plain" });
-    const file = new File([blob], txtFilename, { type: "text/plain" });
-    
-    const fileResponse = await openai.files.create({
-      file: file,
-      purpose: "assistants",
-    });
-    console.log(`   File uploaded: ${fileResponse.id}`);
+    // Upload each page as a separate file
+    const baseName = pdfFile.replace(".pdf", "");
+    const pageFileIds = [];
+    let uploadedCount = 0;
 
-    // Add to Vector Store
-    console.log(`   Adding to Vector Store...`);
-    await openai.vectorStores.files.create(vectorStoreId, {
-      file_id: fileResponse.id,
-    });
+    console.log(`   Uploading ${totalPages} pages as separate files...`);
+    for (let i = 0; i < finalPageTexts.length; i++) {
+      if (finalPageTexts[i].trim().length === 0) continue;
 
-    // Wait for indexing
-    console.log(`   Waiting for indexing to complete...`);
-    let status = "in_progress";
-    let attempts = 0;
-    while (status === "in_progress" && attempts < 120) {
-      await new Promise((r) => setTimeout(r, 5000));
-      const fileStatus = await openai.vectorStores.files.retrieve(
-        vectorStoreId,
-        fileResponse.id
-      );
-      status = fileStatus.status;
-      attempts++;
-      if (attempts % 6 === 0) {
-        console.log(`   Still indexing... (${attempts * 5}s)`);
+      const pageNum = i + 1;
+      const paddedPage = String(pageNum).padStart(3, "0");
+      const pageFilename = `${baseName}_page_${paddedPage}.txt`;
+      const pageContent = formatSinglePage(pdfFile, pageNum, finalPageTexts[i]);
+
+      const blob = new Blob([pageContent], { type: "text/plain" });
+      const file = new File([blob], pageFilename, { type: "text/plain" });
+
+      try {
+        const fileResponse = await openai.files.create({ file, purpose: "assistants" });
+        await openai.vectorStores.files.create(vectorStoreId, { file_id: fileResponse.id });
+        pageFileIds.push(fileResponse.id);
+        uploadedCount++;
+        if (uploadedCount % 20 === 0) {
+          console.log(`   Uploaded ${uploadedCount}/${totalPages} pages...`);
+        }
+      } catch (err) {
+        console.error(`   Failed to upload page ${pageNum}: ${err.message || err}`);
       }
     }
 
-    if (status === "completed") {
-      console.log(`   ✅ ${pdfFile} indexed successfully! (${totalPages} pages)`);
-      // Track the file
-      markProcessed({
-        filename: pdfFile,
-        hash: fileHash,
-        openaiFileId: fileResponse.id,
-        vectorStoreId,
-        pageCount: totalPages,
-        processedAt: new Date().toISOString(),
-      });
-    } else {
-      console.error(`   ❌ Indexing failed with status: ${status}`);
+    console.log(`   Uploaded ${uploadedCount} page files. Waiting for indexing...`);
+
+    // Wait for all files to be indexed (check last few)
+    const filesToCheck = pageFileIds.slice(-3);
+    for (const fid of filesToCheck) {
+      let status = "in_progress";
+      let attempts = 0;
+      while (status === "in_progress" && attempts < 120) {
+        await new Promise((r) => setTimeout(r, 5000));
+        try {
+          const fileStatus = await openai.vectorStores.files.retrieve(vectorStoreId, fid);
+          status = fileStatus.status;
+        } catch {
+          break;
+        }
+        attempts++;
+        if (attempts % 6 === 0) {
+          console.log(`   Still indexing... (${attempts * 5}s)`);
+        }
+      }
     }
+
+    console.log(`   ✅ ${pdfFile} indexed as ${uploadedCount} per-page files!`);
+    markProcessed({
+      filename: pdfFile,
+      hash: perPageHash,
+      openaiFileIds: pageFileIds,
+      vectorStoreId,
+      pageCount: totalPages,
+      uploadedPages: uploadedCount,
+      mode: "per-page",
+      processedAt: new Date().toISOString(),
+    });
   }
 
   // Done

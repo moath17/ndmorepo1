@@ -66,23 +66,42 @@ function extractSourcesFromText(text: string): Source[] {
   return sources;
 }
 
-/** Extract page number from chunk text (strict patterns only). */
+/** Extract page number from the [DOCUMENT: ... | PAGE: N] marker in chunk text. */
 function extractPageFromChunkText(text: string): number | undefined {
   if (!text || typeof text !== "string") return undefined;
-  const patterns = [
-    /page\s*[:=]\s*(\d+)/i,
-    /\(page\s*(\d+)\)/i,
-    /\(صفحة\s*(\d+)\)/,
-    /صفحة\s*[:=]\s*(\d+)/,
-  ];
-  for (const re of patterns) {
-    const m = text.match(re);
-    if (m) {
-      const p = parseInt(m[1], 10);
-      if (p > 0 && p < 10000) return p;
-    }
+  // Primary: the exact marker added by setup-knowledge-base script
+  const marker = text.match(/\[DOCUMENT:\s*.+?\s*\|\s*PAGE:\s*(\d+)\]/);
+  if (marker) {
+    const p = parseInt(marker[1], 10);
+    if (p > 0 && p < 10000) return p;
+  }
+  // Fallback: explicit "page: N" or "page = N"
+  const fallback = text.match(/page\s*[:=]\s*(\d+)/i);
+  if (fallback) {
+    const p = parseInt(fallback[1], 10);
+    if (p > 0 && p < 10000) return p;
   }
   return undefined;
+}
+
+/** Extract page number from per-page filename like Policies001_page_045.txt */
+function extractPageFromFilename(filename: string): number | undefined {
+  if (!filename) return undefined;
+  const m = filename.match(/_page_(\d+)\./);
+  if (m) {
+    const p = parseInt(m[1], 10);
+    if (p > 0 && p < 10000) return p;
+  }
+  return undefined;
+}
+
+/** Resolve per-page filename to original PDF name: Policies001_page_045.txt → Policies001.pdf */
+function resolveOriginalDocument(filename: string): string {
+  const pageMatch = filename.match(/^(.+?)_page_\d+\.(txt|pdf)$/i);
+  if (pageMatch) {
+    return pageMatch[1] + ".pdf";
+  }
+  return filename.replace(/\.txt$/i, ".pdf");
 }
 
 /**
@@ -243,8 +262,9 @@ export async function POST(request: NextRequest) {
                   if (result.filename) {
                     const score = result.score ?? 0;
                     if (score < 0.4) continue;
-                    const page = result.text ? extractPageFromChunkText(result.text) : undefined;
-                    addSource({ document: result.filename, ...(page ? { page } : {}) });
+                    const page = extractPageFromFilename(result.filename) ?? (result.text ? extractPageFromChunkText(result.text) : undefined);
+                    const doc = resolveOriginalDocument(result.filename);
+                    addSource({ document: doc, ...(page ? { page } : {}) });
                   }
                 }
               }
@@ -267,17 +287,24 @@ export async function POST(request: NextRequest) {
                       const anns = block.annotations as Array<{ type?: string; filename?: string }> | undefined;
                       if (Array.isArray(anns)) {
                         for (const ann of anns) {
-                          if (ann.filename) addSource({ document: ann.filename });
+                          if (ann.filename) {
+                            const page = extractPageFromFilename(ann.filename);
+                            const doc = resolveOriginalDocument(ann.filename);
+                            addSource({ document: doc, ...(page ? { page } : {}) });
+                          }
                         }
                       }
                     }
                   }
-                  const fc = item.file_search_call as { results?: Array<{ filename?: string; text?: string }> } | undefined;
+                  const fc = item.file_search_call as { results?: Array<{ filename?: string; text?: string; score?: number }> } | undefined;
                   if (fc?.results) {
                     for (const r of fc.results) {
                       if (r.filename) {
-                        const page = r.text ? extractPageFromChunkText(r.text) : undefined;
-                        addSource({ document: r.filename, ...(page ? { page } : {}) });
+                        const fcScore = (r as { score?: number }).score ?? 0;
+                        if (fcScore < 0.4) continue;
+                        const page = extractPageFromFilename(r.filename) ?? (r.text ? extractPageFromChunkText(r.text) : undefined);
+                        const doc = resolveOriginalDocument(r.filename);
+                        addSource({ document: doc, ...(page ? { page } : {}) });
                       }
                     }
                   }
@@ -301,6 +328,14 @@ export async function POST(request: NextRequest) {
               if (fullText.includes(kf.replace(".pdf", "")) || fullText.includes(kf)) {
                 addSource({ document: kf });
               }
+            }
+            // Also check for per-page filenames
+            const pageFilePattern = /(Policies001|PoliciesEn001)_page_(\d+)/g;
+            let pfMatch;
+            while ((pfMatch = pageFilePattern.exec(fullText)) !== null) {
+              const doc = pfMatch[1] + ".pdf";
+              const page = parseInt(pfMatch[2], 10);
+              if (page > 0) addSource({ document: doc, page });
             }
           }
 
