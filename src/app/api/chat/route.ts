@@ -63,32 +63,17 @@ function extractSourcesFromText(text: string): Source[] {
     for (const page of pageNums) add(doc, page);
   }
 
-  // Pattern 4: standalone "صفحة N" or "page N" near a known filename
-  const standaloneAr = /صفحة\s+(\d+)/g;
-  while ((match = standaloneAr.exec(text)) !== null) {
-    const page = parseInt(match[1], 10);
-    // Determine which file based on context (look ±200 chars around the match)
-    const ctx = text.slice(Math.max(0, match.index - 200), match.index + 200);
-    if (ctx.includes("PoliciesEn001")) add("PoliciesEn001.pdf", page);
-    else add("Policies001.pdf", page);
-  }
-
   return sources;
 }
 
-/** Extract page number from chunk text (multiple formats). */
+/** Extract page number from chunk text (strict patterns only). */
 function extractPageFromChunkText(text: string): number | undefined {
   if (!text || typeof text !== "string") return undefined;
   const patterns = [
     /page\s*[:=]\s*(\d+)/i,
-    /صفحة\s*[:=]?\s*(\d+)/,
-    /الصفحة\s*(\d+)/,
-    /\bp\.\s*(\d+)\b/i,
-    /–\s*(\d+)\s*of\s*\d+/,
-    /—\s*(\d+)\s*—/,
-    /^\s*(\d+)\s*\/\s*\d+\s*$/m,
-    /\(صفحة\s*(\d+)\)/,
     /\(page\s*(\d+)\)/i,
+    /\(صفحة\s*(\d+)\)/,
+    /صفحة\s*[:=]\s*(\d+)/,
   ];
   for (const re of patterns) {
     const m = text.match(re);
@@ -192,7 +177,7 @@ export async function POST(request: NextRequest) {
     // Create a streaming response using OpenAI Responses API
     const stream = await client.responses.create({
       model: "gpt-4.1-mini",
-      temperature: 0,
+      temperature: 0.3,
       stream: true,
       input: [
         { role: "developer", content: localizedPrompt },
@@ -202,7 +187,7 @@ export async function POST(request: NextRequest) {
         {
           type: "file_search",
           vector_store_ids: [vectorStoreId],
-          max_num_results: 20,
+          max_num_results: 10,
         },
       ],
       tool_choice: "required",
@@ -256,13 +241,10 @@ export async function POST(request: NextRequest) {
               if (results && Array.isArray(results)) {
                 for (const result of results) {
                   if (result.filename) {
+                    const score = result.score ?? 0;
+                    if (score < 0.4) continue;
                     const page = result.text ? extractPageFromChunkText(result.text) : undefined;
                     addSource({ document: result.filename, ...(page ? { page } : {}) });
-                  }
-                  if (result.text) {
-                    for (const ts of extractSourcesFromText(result.text)) {
-                      addSource(ts);
-                    }
                   }
                 }
               }
@@ -301,22 +283,7 @@ export async function POST(request: NextRequest) {
                   }
                 }
               }
-              // Deep scan for file_search_call.results anywhere in response
-              const scan = (obj: unknown) => {
-                if (!obj || typeof obj !== "object") return;
-                const o = obj as Record<string, unknown>;
-                if (o.file_search_call && typeof o.file_search_call === "object") {
-                  const res = (o.file_search_call as Record<string, unknown>).results;
-                  if (Array.isArray(res)) {
-                    for (const r of res as Array<{ filename?: string }>) {
-                      if (r.filename) addSource({ document: r.filename });
-                    }
-                  }
-                }
-                if (Array.isArray(o)) { o.forEach(scan); return; }
-                Object.values(o).forEach(scan);
-              };
-              scan(response);
+              // Deep scan removed: rely on explicit citations and annotations only
             }
           }
 
@@ -337,12 +304,13 @@ export async function POST(request: NextRequest) {
             }
           }
 
-          // Sort sources
+          // Sort sources and limit to top 5 most relevant
           allSources.sort((a, b) => {
             if (a.document !== b.document)
               return a.document.localeCompare(b.document);
             return (a.page || 0) - (b.page || 0);
           });
+          const limitedSources = allSources.slice(0, 5);
 
           // Clean citation markers and page-number blocks from the answer text
           let cleanedText = fullText
@@ -374,11 +342,11 @@ export async function POST(request: NextRequest) {
             !safeAnswer ||
             safeAnswer.includes("لم يتم العثور") ||
             safeAnswer.includes("Not found in the provided");
-          const noSources = allSources.length === 0 && isNotFoundAnswer;
+          const noSources = limitedSources.length === 0 && isNotFoundAnswer;
 
           // Log for debugging in dev
           if (process.env.NODE_ENV !== "production") {
-            console.log(`[Chat] Sources found: ${allSources.length}`, allSources.map(s => `${s.document}:${s.page}`));
+            console.log(`[Chat] Sources found: ${limitedSources.length} (of ${allSources.length} total)`, limitedSources.map(s => `${s.document}:${s.page}`));
             console.log(`[Chat] noSources=${noSources}, answerLength=${safeAnswer.length}`);
           }
 
@@ -387,7 +355,7 @@ export async function POST(request: NextRequest) {
               `data: ${JSON.stringify({
                 type: "done",
                 answer: safeAnswer,
-                sources: allSources,
+                sources: limitedSources,
                 noSources,
               })}\n\n`
             )
