@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAllInteractions, getAllInteractionsAsync, getAnalytics, getAnalyticsAsync } from "@/lib/learning";
 import { isInteractionsStoreAvailable } from "@/lib/interactions-store";
-import { getAllSessions } from "@/lib/session";
+import { getAllSessions, getAllSessionsAsync } from "@/lib/session";
+import { isSessionStoreAvailable } from "@/lib/session-store";
 import { getNotesFromStore, isNotesStoreAvailable } from "@/lib/notes-store";
+import { getAssessmentsFromStore, isAssessmentsStoreAvailable } from "@/lib/assessments-store";
 import { readFileSync, existsSync, statSync, readdirSync } from "fs";
 import { resolve, extname } from "path";
 
@@ -43,7 +45,7 @@ async function loadNotes(): Promise<Array<{ id: string; content: string; timesta
   }
 }
 
-function loadAssessments() {
+function loadAssessmentsFromFile() {
   const file = resolve(DATA_DIR, "assessments.json");
   if (!existsSync(file)) return [];
   try {
@@ -191,11 +193,11 @@ export async function POST(request: NextRequest) {
 
     if (action === "dashboard") {
       const analytics = isInteractionsStoreAvailable() ? await getAnalyticsAsync() : getAnalytics();
-      const sessions = getAllSessions();
+      const sessions = isSessionStoreAvailable() ? await getAllSessionsAsync() : getAllSessions();
       const files = loadProcessedFiles();
       const notes = await loadNotes();
       const interactions = isInteractionsStoreAvailable() ? await getAllInteractionsAsync() : getAllInteractions();
-      const assessments = loadAssessments();
+      const assessments = isAssessmentsStoreAvailable() ? await getAssessmentsFromStore() : loadAssessmentsFromFile();
 
       const questions = interactions.map((i) => ({
         question: i.question,

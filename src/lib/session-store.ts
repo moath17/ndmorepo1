@@ -1,25 +1,20 @@
 /**
- * Interactions storage (for chat + ratings): Upstash Redis when env vars set (Vercel).
- * Enables like button and admin feedback tab to work on production.
+ * Session storage: Upstash Redis when env vars set (Vercel).
+ * Enables admin users tab to work on production.
  */
 
 import { Redis } from "@upstash/redis";
 
-const KEY = "ndmo:interactions";
-const MAX_INTERACTIONS = 1000;
+const KEY = "ndmo:sessions";
+const MAX_SESSIONS = 500;
 
-export interface StoredInteraction {
+export interface StoredSession {
   id: string;
-  sessionId: string;
-  userName?: string;
-  timestamp: string;
-  locale: string;
-  question: string;
-  answer: string;
-  sources: Array<{ document: string; page?: number }>;
-  rating?: "up" | "down" | null;
-  feedbackReason?: string | null;
-  responseTimeMs?: number;
+  name?: string;
+  createdAt: string;
+  lastActive: string;
+  questionsCount: number;
+  locale?: string;
 }
 
 function getRedis(): Redis | null {
@@ -29,24 +24,24 @@ function getRedis(): Redis | null {
   return new Redis({ url, token });
 }
 
-export async function getInteractionsFromStore(): Promise<StoredInteraction[]> {
+export async function getSessionsFromStore(): Promise<StoredSession[]> {
   const redis = getRedis();
   if (!redis) return [];
   try {
     const raw = await redis.get(KEY);
     if (!raw) return [];
     const arr = Array.isArray(raw) ? raw : typeof raw === "string" ? JSON.parse(raw) : [];
-    return Array.isArray(arr) ? (arr as StoredInteraction[]) : [];
+    return Array.isArray(arr) ? (arr as StoredSession[]) : [];
   } catch {
     return [];
   }
 }
 
-export async function saveInteractionsToStore(interactions: StoredInteraction[]): Promise<boolean> {
+export async function saveSessionsToStore(sessions: StoredSession[]): Promise<boolean> {
   const redis = getRedis();
   if (!redis) return false;
   try {
-    const trimmed = interactions.length > MAX_INTERACTIONS ? interactions.slice(-MAX_INTERACTIONS) : interactions;
+    const trimmed = sessions.length > MAX_SESSIONS ? sessions.slice(-MAX_SESSIONS) : sessions;
     await redis.set(KEY, JSON.stringify(trimmed));
     return true;
   } catch {
@@ -54,7 +49,7 @@ export async function saveInteractionsToStore(interactions: StoredInteraction[])
   }
 }
 
-export function isInteractionsStoreAvailable(): boolean {
+export function isSessionStoreAvailable(): boolean {
   const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
   return !!(url && token);

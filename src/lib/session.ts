@@ -1,10 +1,16 @@
 /**
  * Simple session tracking for user analytics.
- * Uses file-based storage — no database needed.
+ * Uses file-based storage locally; Upstash Redis on Vercel when env vars set.
  */
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { resolve } from "path";
+import {
+  getSessionsFromStore,
+  saveSessionsToStore,
+  isSessionStoreAvailable,
+  type StoredSession,
+} from "./session-store";
 
 const DATA_DIR = resolve(process.cwd(), "data");
 const SESSIONS_FILE = resolve(DATA_DIR, "sessions.json");
@@ -70,6 +76,48 @@ export function trackSession(
   return session;
 }
 
+/** Async: track session using Redis when available (for Vercel). */
+export async function trackSessionAsync(
+  sessionId: string,
+  name?: string,
+  locale?: string
+): Promise<Session> {
+  if (isSessionStoreAvailable()) {
+    const list = await getSessionsFromStore();
+    let session = list.find((s) => s.id === sessionId) as StoredSession | undefined;
+
+    if (session) {
+      session.lastActive = new Date().toISOString();
+      session.questionsCount++;
+      if (name && !session.name) session.name = name;
+      if (locale) session.locale = locale;
+    } else {
+      session = {
+        id: sessionId,
+        name: name || undefined,
+        createdAt: new Date().toISOString(),
+        lastActive: new Date().toISOString(),
+        questionsCount: 1,
+        locale,
+      };
+      list.push(session);
+    }
+
+    const trimmed = list.length > 500 ? list.slice(-500) : list;
+    await saveSessionsToStore(trimmed);
+    return session;
+  }
+  return trackSession(sessionId, name, locale);
+}
+
 export function getAllSessions(): Session[] {
   return loadSessions().sessions;
+}
+
+/** Async: get all sessions from Redis when available (for Vercel admin). */
+export async function getAllSessionsAsync(): Promise<Session[]> {
+  if (isSessionStoreAvailable()) {
+    return getSessionsFromStore();
+  }
+  return getAllSessions();
 }

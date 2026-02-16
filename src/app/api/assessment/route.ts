@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { resolve } from "path";
+import {
+  appendAssessmentToStore,
+  isAssessmentsStoreAvailable,
+  type StoredAssessment,
+} from "@/lib/assessments-store";
 
 const DATA_DIR = resolve(process.cwd(), "data");
 const ASSESSMENTS_FILE = resolve(DATA_DIR, "assessments.json");
@@ -53,9 +58,7 @@ export async function POST(request: NextRequest) {
         answeredNo,
       } = body;
 
-      const data = loadAssessments();
-
-      const record: AssessmentRecord = {
+      const record: StoredAssessment = {
         id: `asmt_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
         userName: userName || "Guest",
         locale: locale || "ar",
@@ -68,6 +71,12 @@ export async function POST(request: NextRequest) {
         timestamp: new Date().toISOString(),
       };
 
+      if (isAssessmentsStoreAvailable()) {
+        const ok = await appendAssessmentToStore(record);
+        if (ok) return NextResponse.json({ success: true, id: record.id });
+      }
+
+      const data = loadAssessments();
       data.assessments.push(record);
 
       // Keep only last 200 assessments

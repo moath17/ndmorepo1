@@ -1,25 +1,24 @@
 /**
- * Interactions storage (for chat + ratings): Upstash Redis when env vars set (Vercel).
- * Enables like button and admin feedback tab to work on production.
+ * Assessments storage: Upstash Redis when env vars set (Vercel).
+ * Enables admin assessments tab to work on production.
  */
 
 import { Redis } from "@upstash/redis";
 
-const KEY = "ndmo:interactions";
-const MAX_INTERACTIONS = 1000;
+const KEY = "ndmo:assessments";
+const MAX_ASSESSMENTS = 200;
 
-export interface StoredInteraction {
+export interface StoredAssessment {
   id: string;
-  sessionId: string;
-  userName?: string;
-  timestamp: string;
+  userName: string;
   locale: string;
-  question: string;
-  answer: string;
-  sources: Array<{ document: string; page?: number }>;
-  rating?: "up" | "down" | null;
-  feedbackReason?: string | null;
-  responseTimeMs?: number;
+  overallScore: number;
+  categoryScores: { id: string; name: string; score: number }[];
+  totalQuestions: number;
+  answeredYes: number;
+  answeredPartial: number;
+  answeredNo: number;
+  timestamp: string;
 }
 
 function getRedis(): Redis | null {
@@ -29,24 +28,26 @@ function getRedis(): Redis | null {
   return new Redis({ url, token });
 }
 
-export async function getInteractionsFromStore(): Promise<StoredInteraction[]> {
+export async function getAssessmentsFromStore(): Promise<StoredAssessment[]> {
   const redis = getRedis();
   if (!redis) return [];
   try {
     const raw = await redis.get(KEY);
     if (!raw) return [];
     const arr = Array.isArray(raw) ? raw : typeof raw === "string" ? JSON.parse(raw) : [];
-    return Array.isArray(arr) ? (arr as StoredInteraction[]) : [];
+    return Array.isArray(arr) ? (arr as StoredAssessment[]) : [];
   } catch {
     return [];
   }
 }
 
-export async function saveInteractionsToStore(interactions: StoredInteraction[]): Promise<boolean> {
+export async function appendAssessmentToStore(assessment: StoredAssessment): Promise<boolean> {
   const redis = getRedis();
   if (!redis) return false;
   try {
-    const trimmed = interactions.length > MAX_INTERACTIONS ? interactions.slice(-MAX_INTERACTIONS) : interactions;
+    const list = await getAssessmentsFromStore();
+    list.push(assessment);
+    const trimmed = list.length > MAX_ASSESSMENTS ? list.slice(-MAX_ASSESSMENTS) : list;
     await redis.set(KEY, JSON.stringify(trimmed));
     return true;
   } catch {
@@ -54,7 +55,7 @@ export async function saveInteractionsToStore(interactions: StoredInteraction[])
   }
 }
 
-export function isInteractionsStoreAvailable(): boolean {
+export function isAssessmentsStoreAvailable(): boolean {
   const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
   return !!(url && token);

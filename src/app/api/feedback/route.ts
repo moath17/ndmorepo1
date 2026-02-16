@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { recordInteraction, recordInteractionAsync, rateInteraction, rateInteractionAsync } from "@/lib/learning";
 import { isInteractionsStoreAvailable } from "@/lib/interactions-store";
-import { trackSession } from "@/lib/session";
+import { trackSessionAsync } from "@/lib/session";
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
       }
       // Track user session with name
       if (sessionId) {
-        trackSession(sessionId, userName || undefined, locale);
+        await trackSessionAsync(sessionId, userName || undefined, locale);
       }
       const payload = {
         sessionId: sessionId || "unknown",
