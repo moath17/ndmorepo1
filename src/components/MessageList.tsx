@@ -96,7 +96,7 @@ function processPageLinksInContent(content: string, locale: Locale): string {
   result = result.replace(arRegex, (_match, pagesPart: string, doc: string) => {
     const pdfDoc = doc.replace(/\.txt$/i, ".pdf");
     return pagesPart.replace(/صفحة\s*(\d+)/g, (pagePhrase: string, num: string) => {
-      const url = `/pdfs/${encodeURIComponent(pdfDoc)}#page=${num}`;
+      const url = `/${locale}/pdf/view?file=${encodeURIComponent(pdfDoc)}&page=${num}`;
       return `[${pagePhrase}](${url})`;
     }) + ` من ${pdfDoc}`;
   });
@@ -108,7 +108,7 @@ function processPageLinksInContent(content: string, locale: Locale): string {
   result = result.replace(enRegex, (_match, pagesPart: string, doc: string) => {
     const pdfDoc = doc.replace(/\.txt$/i, ".pdf");
     return pagesPart.replace(/Page\s*(\d+)/gi, (pagePhrase: string, num: string) => {
-      const url = `/pdfs/${encodeURIComponent(pdfDoc)}#page=${num}`;
+      const url = `/${locale}/pdf/view?file=${encodeURIComponent(pdfDoc)}&page=${num}`;
       return `[${pagePhrase.trim()}](${url})`;
     }) + ` from ${pdfDoc}`;
   });
@@ -132,8 +132,8 @@ function SourceBadge({
   // Clickable link only if the PDF actually exists in public/pdfs/
   if (resolvedPdf) {
     const pdfUrl = hasPage
-      ? `/pdfs/${encodeURIComponent(resolvedPdf)}#page=${source.page}`
-      : `/pdfs/${encodeURIComponent(resolvedPdf)}`;
+      ? `/${locale}/pdf/view?file=${encodeURIComponent(resolvedPdf)}&page=${source.page}`
+      : `/${locale}/pdf/view?file=${encodeURIComponent(resolvedPdf)}`;
 
     return (
       <a
