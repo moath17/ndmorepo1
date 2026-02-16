@@ -24,6 +24,7 @@ import {
   RefreshCw,
   Loader2,
   Pencil,
+  DollarSign,
 } from "lucide-react";
 import type { Dictionary, Locale } from "@/types";
 
@@ -32,7 +33,7 @@ interface AdminPanelProps {
   locale: Locale;
 }
 
-type Tab = "files" | "users" | "questions" | "feedback" | "notes" | "assessments";
+type Tab = "files" | "users" | "questions" | "feedback" | "notes" | "assessments" | "apiUsage";
 
 interface AdminData {
   analytics: {
@@ -87,6 +88,13 @@ interface AdminData {
     answeredPartial: number;
     answeredNo: number;
     timestamp: string;
+  }[];
+  apiUsage: {
+    date: string;
+    requests: number;
+    inputTokens: number;
+    outputTokens: number;
+    estimatedCost: number;
   }[];
 }
 
@@ -405,6 +413,7 @@ export default function AdminPanel({ dict, locale }: AdminPanelProps) {
     { key: "files", label: dict.admin.files, icon: FileText },
     { key: "users", label: dict.admin.users, icon: Users },
     { key: "notes", label: dict.admin.notes, icon: StickyNote },
+    { key: "apiUsage", label: isAr ? "استهلاك API" : "API Usage", icon: DollarSign },
   ];
 
   const formatDate = (date: string) => {
@@ -874,6 +883,102 @@ export default function AdminPanel({ dict, locale }: AdminPanelProps) {
             ))}
           </div>
         )}
+
+        {data && tab === "apiUsage" && (() => {
+          const usage = data.apiUsage || [];
+          const totalRequests = usage.reduce((s, d) => s + d.requests, 0);
+          const totalInput = usage.reduce((s, d) => s + d.inputTokens, 0);
+          const totalOutput = usage.reduce((s, d) => s + d.outputTokens, 0);
+          const totalCost = usage.reduce((s, d) => s + d.estimatedCost, 0);
+          const todayEntry = usage.find((d) => d.date === new Date().toISOString().split("T")[0]);
+
+          return (
+            <div className="space-y-6">
+              {/* Summary cards */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <StatCard
+                  label={isAr ? "طلبات اليوم" : "Today's Requests"}
+                  value={todayEntry?.requests || 0}
+                  color="text-blue-600 bg-blue-50"
+                />
+                <StatCard
+                  label={isAr ? "إجمالي الطلبات" : "Total Requests"}
+                  value={totalRequests}
+                  color="text-indigo-600 bg-indigo-50"
+                />
+                <StatCard
+                  label={isAr ? "إجمالي Tokens" : "Total Tokens"}
+                  value={`${((totalInput + totalOutput) / 1000).toFixed(1)}K`}
+                  color="text-purple-600 bg-purple-50"
+                />
+                <StatCard
+                  label={isAr ? "التكلفة التقديرية" : "Est. Cost"}
+                  value={`$${totalCost.toFixed(3)}`}
+                  color="text-amber-600 bg-amber-50"
+                  icon={<DollarSign className="w-4 h-4" />}
+                />
+              </div>
+
+              {/* Today detail */}
+              {todayEntry && (
+                <div className="bg-white rounded-xl border border-gray-200 p-5">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3">
+                    {isAr ? "استهلاك اليوم" : "Today's Usage"}
+                  </h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+                    <div>
+                      <p className="text-gray-400">{isAr ? "الطلبات" : "Requests"}</p>
+                      <p className="text-lg font-bold text-gray-800">{todayEntry.requests}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400">{isAr ? "Tokens مدخلة" : "Input Tokens"}</p>
+                      <p className="text-lg font-bold text-gray-800">{todayEntry.inputTokens.toLocaleString()}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400">{isAr ? "Tokens مخرجة" : "Output Tokens"}</p>
+                      <p className="text-lg font-bold text-gray-800">{todayEntry.outputTokens.toLocaleString()}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400">{isAr ? "التكلفة" : "Cost"}</p>
+                      <p className="text-lg font-bold text-gray-800">${todayEntry.estimatedCost.toFixed(4)}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Daily usage table */}
+              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                      <tr>
+                        <th className="text-start py-3 px-4 font-medium text-gray-500">{isAr ? "التاريخ" : "Date"}</th>
+                        <th className="text-start py-3 px-4 font-medium text-gray-500">{isAr ? "الطلبات" : "Requests"}</th>
+                        <th className="text-start py-3 px-4 font-medium text-gray-500">{isAr ? "Tokens مدخلة" : "Input"}</th>
+                        <th className="text-start py-3 px-4 font-medium text-gray-500">{isAr ? "Tokens مخرجة" : "Output"}</th>
+                        <th className="text-start py-3 px-4 font-medium text-gray-500">{isAr ? "التكلفة" : "Cost"}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {usage.map((d, i) => (
+                        <tr key={i} className="border-b border-gray-50 hover:bg-gray-50">
+                          <td className="py-3 px-4 text-gray-700">{d.date}</td>
+                          <td className="py-3 px-4 text-gray-600">{d.requests}</td>
+                          <td className="py-3 px-4 text-gray-600">{d.inputTokens.toLocaleString()}</td>
+                          <td className="py-3 px-4 text-gray-600">{d.outputTokens.toLocaleString()}</td>
+                          <td className="py-3 px-4 text-gray-600 font-medium">${d.estimatedCost.toFixed(4)}</td>
+                        </tr>
+                      ))}
+                      {usage.length === 0 && (
+                        <tr><td colSpan={5} className="py-12 text-center text-gray-400">{dict.admin.noData}</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
       </main>
     </div>
   );

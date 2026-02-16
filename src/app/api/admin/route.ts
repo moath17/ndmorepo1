@@ -5,6 +5,7 @@ import { getAllSessions, getAllSessionsAsync } from "@/lib/session";
 import { isSessionStoreAvailable } from "@/lib/session-store";
 import { getNotesFromStore, isNotesStoreAvailable } from "@/lib/notes-store";
 import { getAssessmentsFromStore, isAssessmentsStoreAvailable } from "@/lib/assessments-store";
+import { getUsageFromStore } from "@/lib/api-usage-store";
 import { readFileSync, existsSync, statSync, readdirSync } from "fs";
 import { resolve, extname } from "path";
 
@@ -209,6 +210,8 @@ export async function POST(request: NextRequest) {
         rating: i.rating,
       }));
 
+      const apiUsage = await getUsageFromStore();
+
       return NextResponse.json({
         analytics,
         sessions: sessions.slice(-100).reverse(),
@@ -216,6 +219,7 @@ export async function POST(request: NextRequest) {
         notes: notes.slice(-50).reverse(),
         questions: questions.slice(-200).reverse(),
         assessments: assessments.slice(-50).reverse(),
+        apiUsage: apiUsage.slice(-90).reverse(),
       });
     }
 

@@ -5,6 +5,7 @@ import { checkRateLimit } from "@/lib/rate-limiter";
 import { SYSTEM_PROMPT } from "@/lib/system-prompt";
 import { filterInput, filterOutput } from "@/lib/content-filter";
 import { getClientIP } from "@/lib/utils";
+import { recordUsage } from "@/lib/api-usage-store";
 import type { ChatRequest, Source } from "@/types";
 
 /**
@@ -271,6 +272,11 @@ export async function POST(request: NextRequest) {
               }
             } else if (eventType === "response.completed" || eventType === "response.done") {
               const response = eventAny.response as Record<string, unknown> | undefined;
+              // Track API token usage
+              const usage = response?.usage as { input_tokens?: number; output_tokens?: number } | undefined;
+              if (usage) {
+                recordUsage(usage.input_tokens || 0, usage.output_tokens || 0).catch(() => {});
+              }
               if (response?.output && Array.isArray(response.output)) {
                 for (const item of response.output as Array<Record<string, unknown>>) {
                   const content = item.content as Array<Record<string, unknown>> | undefined;
