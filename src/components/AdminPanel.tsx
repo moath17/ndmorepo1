@@ -165,16 +165,18 @@ export default function AdminPanel({ dict, locale }: AdminPanelProps) {
       if (res.ok) {
         const result = await res.json();
         setData(result);
+        setError("");
       } else {
         setToken(null);
         localStorage.removeItem("ndmo-admin-token");
+        if (res.status === 401) setError(dict.admin.sessionExpired ?? "Session expired. Please log in again.");
       }
     } catch {
       // error
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [dict]);
 
   useEffect(() => {
     const saved = localStorage.getItem("ndmo-admin-token");

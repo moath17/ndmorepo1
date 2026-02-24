@@ -124,6 +124,7 @@
     "logout": "Logout",
     "wrongPassword": "Wrong password",
     "connectionError": "Connection error",
+    "sessionExpired": "Session expired. Please log in again.",
     "loading": "Loading...",
     "files": "Files",
     "users": "Users",
