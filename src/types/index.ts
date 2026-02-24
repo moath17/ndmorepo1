@@ -145,6 +145,7 @@ export interface Dictionary {
     wrongPassword: string;
     connectionError: string;
     sessionExpired: string;
+    checkEnvHint: string;
     loading: string;
     files: string;
     users: string;

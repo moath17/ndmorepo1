@@ -125,6 +125,7 @@
     "wrongPassword": "Wrong password",
     "connectionError": "Connection error",
     "sessionExpired": "Session expired. Please log in again.",
+    "checkEnvHint": "On Vercel: set ADMIN_PASSWORD in Project → Settings → Environment Variables, then redeploy.",
     "loading": "Loading...",
     "files": "Files",
     "users": "Users",

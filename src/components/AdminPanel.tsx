@@ -393,7 +393,12 @@ export default function AdminPanel({ dict, locale }: AdminPanelProps) {
               className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
             />
             {error && (
-              <p className="text-sm text-red-500 text-center">{error}</p>
+              <div className="space-y-1">
+                <p className="text-sm text-red-500 text-center">{error}</p>
+                {error === dict.admin.wrongPassword && (
+                  <p className="text-xs text-gray-500 text-center">{dict.admin.checkEnvHint}</p>
+                )}
+              </div>
             )}
             <button
               onClick={handleLogin}

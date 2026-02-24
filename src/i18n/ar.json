@@ -125,6 +125,7 @@
     "wrongPassword": "كلمة مرور خاطئة",
     "connectionError": "خطأ في الاتصال",
     "sessionExpired": "انتهت الجلسة. أدخل كلمة المرور مرة أخرى.",
+    "checkEnvHint": "على Vercel: اضبط ADMIN_PASSWORD في المشروع → Settings → Environment Variables ثم أعد النشر.",
     "loading": "جارٍ التحميل...",
     "files": "الملفات",
     "users": "المستخدمين",
