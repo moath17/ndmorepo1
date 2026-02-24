@@ -9,7 +9,7 @@ import {
   cleanPublicPdfs,
 } from "@/lib/file-manager";
 
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "ndmo2024";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "Mm@1889";
 
 // Simple token verification (same as main admin route)
 function generateToken(pw: string): string {

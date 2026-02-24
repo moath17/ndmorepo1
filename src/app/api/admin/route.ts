@@ -9,7 +9,7 @@ import { getUsageFromStore } from "@/lib/api-usage-store";
 import { readFileSync, existsSync, statSync, readdirSync } from "fs";
 import { resolve, extname } from "path";
 
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "ndmo2024";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "Mm@1889";
 const DATA_DIR = resolve(process.cwd(), "data");
 
 // Simple token: hash the password to avoid sending raw password as bearer token
