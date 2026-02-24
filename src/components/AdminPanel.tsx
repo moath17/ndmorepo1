@@ -169,7 +169,7 @@ export default function AdminPanel({ dict, locale }: AdminPanelProps) {
       } else {
         setToken(null);
         localStorage.removeItem("ndmo-admin-token");
-        if (res.status === 401) setError(dict.admin.sessionExpired ?? "Session expired. Please log in again.");
+        if (res.status === 401) setError(dict.admin.sessionExpired);
       }
     } catch {
       // error

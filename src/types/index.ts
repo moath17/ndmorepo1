@@ -144,6 +144,7 @@ export interface Dictionary {
     logout: string;
     wrongPassword: string;
     connectionError: string;
+    sessionExpired: string;
     loading: string;
     files: string;
     users: string;
