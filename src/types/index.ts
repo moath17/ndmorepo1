@@ -149,6 +149,7 @@ export interface Dictionary {
     loading: string;
     files: string;
     users: string;
+    usersCount: string;
     questions: string;
     feedback: string;
     quality: string;

@@ -781,7 +781,13 @@ export default function AdminPanel({ dict, locale }: AdminPanelProps) {
         )}
 
         {data && tab === "users" && (
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-gray-700">
+                {dict.admin.usersCount}: <span className="text-primary-600 font-semibold">{data.sessions.length}</span>
+              </p>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 border-b border-gray-200">
@@ -816,6 +822,7 @@ export default function AdminPanel({ dict, locale }: AdminPanelProps) {
                   )}
                 </tbody>
               </table>
+            </div>
             </div>
           </div>
         )}
